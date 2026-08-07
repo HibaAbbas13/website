@@ -1,0 +1,82 @@
+rules_version = '2';
+
+// AR Storefront — multi-tenant security rules.
+//
+// Design note: a shop document's ID *is* its owner's Firebase uid. That single
+// choice means every ownership check is `request.auth.uid == shopId` — a free
+// string compare — instead of a `get()` against the shop doc, which would bill a
+// read and count against the 10-lookup limit on every single product write.
+// The tradeoff is one shop per account, which is the right shape for this product.
+//
+// Everything under /shops is world-readable by design: that is the storefront.
+// Never put anything private (payouts, emails, phone numbers you don't want
+// scraped) in these documents.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function owns(shopId) {
+      return signedIn() && request.auth.uid == shopId;
+    }
+
+    // Slug registry: maps a pretty URL ("hassan-toys") to a shop/owner uid.
+    // Read-only to the world so the storefront can resolve /s/hassan-toys.
+    // Create-once semantics: a slug can never be updated or deleted from a
+    // client, so one shop cannot steal a slug another shop already claimed.
+    // Uniqueness is enforced by `create` failing when the document exists.
+    match /slugs/{slug} {
+      allow read: if true;
+      allow create: if signedIn()
+                    && request.resource.data.keys().hasOnly(['shopId', 'claimedAt'])
+                    && request.resource.data.shopId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Custom domain registry: maps a hostname a customer owns ("hassantoys.pk")
+    // to their shop, so the storefront can resolve itself at the root of that
+    // domain. Same create-once shape as slugs — a hostname already pointing at
+    // one shop can never be repointed from a client.
+    //
+    // Self-claiming is safe despite the open `create`: a mapping does nothing
+    // until the platform operator also adds that domain to the hosting project
+    // and the owner points DNS at it. Claiming a hostname you don't control
+    // gains you a row and nothing else.
+    match /domains/{hostname} {
+      allow read: if true;
+      allow create: if signedIn()
+                    && request.resource.data.keys().hasOnly(['shopId', 'claimedAt'])
+                    && request.resource.data.shopId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /shops/{shopId} {
+      allow read: if true;
+
+      allow create: if owns(shopId)
+                    && request.resource.data.ownerUid == request.auth.uid;
+
+      // ownerUid is immutable — without this, an owner could hand their shop to
+      // another uid, and any slug already pointing here would follow it.
+      allow update: if owns(shopId)
+                    && request.resource.data.ownerUid == resource.data.ownerUid;
+
+      // Deleting a shop would orphan its slug (slugs are immutable above) and
+      // strand its Storage objects. Do it from the console or an admin script.
+      allow delete: if false;
+
+      match /products/{productId} {
+        allow read: if true;
+        allow write: if owns(shopId);
+      }
+    }
+
+    // Anything not matched above is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

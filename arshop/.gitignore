@@ -1,0 +1,16 @@
+# Firebase emulator output
+*-debug.log
+.firebase/
+firebase-export-*/
+
+# Vercel
+.vercel/
+
+.DS_Store
+.vercel
+.env*
+
+# Test deps (installed on demand)
+test/node_modules/
+test/package-lock.json
+test/package.json

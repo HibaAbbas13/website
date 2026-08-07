@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>AR Storefront — show your products in 3D</title>
+  <meta name="description" content="Give your business a website where customers can place your products in their own room, in 3D, straight from the browser." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <meta name="theme-color" content="#5b5bd6" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="AR Storefront — show your products in 3D" />
+  <meta property="og:description" content="A storefront where shoppers see your product at full size on their own floor. No app to install." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="stylesheet" href="/assets/app.css" />
+  <style>
+    .lander { text-align: center; padding: 13vh 0 9vh; }
+    .lander h1 {
+      font-size: clamp(2.3rem, 7vw, 4rem);
+      font-weight: 830;
+      margin-bottom: 18px;
+    }
+    .lander p.sub {
+      font-size: clamp(1rem, 2.4vw, 1.2rem);
+      color: var(--ink-soft);
+      max-width: 38rem;
+      margin: 0 auto 32px;
+    }
+    .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .points {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+      gap: 20px;
+      margin-top: 26px;
+    }
+    .points h3 { font-size: 1.02rem; font-weight: 730; margin-bottom: 7px; }
+    .points p { margin: 0; color: var(--ink-soft); font-size: 0.92rem; }
+    footer { text-align: center; color: var(--ink-soft); font-size: 0.85rem; padding: 70px 0 24px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="lander">
+      <h1>Your products, in your customer’s room.</h1>
+      <p class="sub">
+        A storefront where shoppers tap once and see your product at full size on
+        their own floor, through their phone camera. No app to install.
+      </p>
+      <div class="cta">
+        <a class="btn" href="/admin">Open your dashboard</a>
+        <a class="btn ghost" href="#how">How it works</a>
+      </div>
+    </div>
+
+    <div class="points" id="how">
+      <div class="card">
+        <h3>Add products in seconds</h3>
+        <p>Name, price, photos, description. Update or delete any time — your site changes instantly.</p>
+      </div>
+      <div class="card">
+        <h3>Real augmented reality</h3>
+        <p>Upload a 3D model and customers can walk around it, then place it in their room on iPhone and Android.</p>
+      </div>
+      <div class="card">
+        <h3>Orders on WhatsApp</h3>
+        <p>Every product gets an order button that opens a chat with you, pre-filled and ready to send.</p>
+      </div>
+      <div class="card">
+        <h3>Your own brand</h3>
+        <p>Pick your colour and logo — your storefront restyles itself to match. Share one link, works on every phone.</p>
+      </div>
+    </div>
+
+    <footer>Built for small businesses.</footer>
+  </div>
+</body>
+</html>

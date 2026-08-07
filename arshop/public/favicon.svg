@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Isometric cube: reads as "3D / place in your room" at 16px, which a
+       storefront glyph does not. Colours follow the browser theme so the mark
+       stays visible in both light and dark tab bars. -->
+  <style>
+    .bg { fill: #5b5bd6; }
+    .top { fill: #ffffff; fill-opacity: 0.95; }
+    .left { fill: #ffffff; fill-opacity: 0.62; }
+    .right { fill: #ffffff; fill-opacity: 0.38; }
+    @media (prefers-color-scheme: dark) { .bg { fill: #6d6df0; } }
+  </style>
+  <rect class="bg" width="32" height="32" rx="7" />
+  <path class="top" d="M16 6.5 24.2 11 16 15.5 7.8 11z" />
+  <path class="left" d="M7 12.4 15.2 17v9.2L7 21.6z" />
+  <path class="right" d="M25 12.4v9.2L16.8 26.2V17z" />
+</svg>

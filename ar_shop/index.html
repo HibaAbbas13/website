@@ -1,0 +1,215 @@
+<title>Monetra Support</title>
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --panel: #ffffff;
+    --ink: #1b241f;
+    --ink-soft: #566058;
+    --rule: #e0dbcd;
+    --accent: #178c6b;
+    --accent-soft: #e4f1ea;
+    --accent-ink: #0f5c46;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121815;
+      --panel: #1a221d;
+      --ink: #eaeee9;
+      --ink-soft: #a3aca2;
+      --rule: #2c352e;
+      --accent: #3bc79a;
+      --accent-soft: #16302a;
+      --accent-ink: #7fe0bd;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121815; --panel: #1a221d; --ink: #eaeee9; --ink-soft: #a3aca2;
+    --rule: #2c352e; --accent: #3bc79a; --accent-soft: #16302a; --accent-ink: #7fe0bd;
+  }
+  :root[data-theme="light"] {
+    --bg: #f7f5f0; --panel: #ffffff; --ink: #1b241f; --ink-soft: #566058;
+    --rule: #e0dbcd; --accent: #178c6b; --accent-soft: #e4f1ea; --accent-ink: #0f5c46;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+  }
+  .wrap {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 72px 28px 120px;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 56px;
+  }
+  .mark {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: var(--accent-soft);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .mark svg { width: 24px; height: 24px; }
+  .wordmark { font-family: ui-serif, Georgia, "Times New Roman", serif; font-size: 22px; font-weight: 700; color: var(--accent-ink); }
+  .tagline { font-size: 13px; color: var(--ink-soft); margin-top: 1px; }
+
+  h1 {
+    font-family: ui-serif, Georgia, "Times New Roman", serif;
+    font-size: clamp(34px, 5vw, 46px);
+    font-weight: 700;
+    line-height: 1.12;
+    text-wrap: balance;
+    margin: 0 0 14px;
+  }
+  .lede {
+    font-size: 18px;
+    color: var(--ink-soft);
+    max-width: 54ch;
+    margin: 0 0 48px;
+  }
+
+  .contact-card {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 16px;
+    padding: 24px 28px;
+    margin-bottom: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .contact-card .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin-bottom: 4px; }
+  .contact-card .value { font-size: 19px; font-weight: 600; }
+  .contact-card a { color: var(--accent-ink); text-decoration: none; }
+  .contact-card a:hover, .contact-card a:focus-visible { text-decoration: underline; }
+  .btn {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 999px;
+    padding: 11px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .btn:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+  h2 {
+    font-family: ui-serif, Georgia, "Times New Roman", serif;
+    font-size: 24px;
+    margin: 0 0 20px;
+    padding-top: 8px;
+  }
+
+  .faq { display: flex; flex-direction: column; gap: 2px; margin-bottom: 56px; }
+  details {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 18px 22px;
+  }
+  details + details { margin-top: 10px; }
+  summary {
+    font-size: 16.5px;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after {
+    content: "+";
+    font-size: 20px;
+    color: var(--accent-ink);
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+  }
+  details[open] summary::after { transform: rotate(45deg); }
+  details p { color: var(--ink-soft); margin: 14px 0 2px; max-width: 62ch; }
+  summary:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 3px; border-radius: 4px; }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 24px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    details[open] summary::after { transition: none; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="mark">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 17L9 10L13 14L21 5" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M15 5H21V11" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="wordmark">Monetra</div>
+      <div class="tagline">For creators who mean business.</div>
+    </div>
+  </header>
+
+  <h1>How can we help?</h1>
+  <p class="lede">Support for the Monetra app — sales, orders, and profit tracking for small businesses and creators.</p>
+
+  <div class="contact-card">
+    <div>
+      <div class="label">Email support</div>
+      <div class="value"><a href="mailto:hibaabbas1306@gmail.com">hibaabbas1306@gmail.com</a></div>
+    </div>
+    <a class="btn" href="mailto:hibaabbas1306@gmail.com">Send a message</a>
+  </div>
+
+  <h2>Common questions</h2>
+  <div class="faq">
+    <details open>
+      <summary>How do I delete my account and data?</summary>
+      <p>Open Monetra, go to the Settings tab, and tap <strong>Delete Account</strong> under the Account section. This permanently removes your account and every product, order, sale, and expense you've recorded — this can't be undone.</p>
+    </details>
+    <details>
+      <summary>I forgot my password. How do I get back in?</summary>
+      <p>On the Settings tab, tap <strong>Forgot Password</strong> and we'll send a reset link to the email you signed up with. If you don't see it within a few minutes, check your spam folder.</p>
+    </details>
+    <details>
+      <summary>What's included in the free plan?</summary>
+      <p>Free accounts can record up to 50 orders a month. Everything else — viewing orders and receipts, Insights charts, customer history, and CSV import — is free with no limit. Premium removes the monthly order cap.</p>
+    </details>
+    <details>
+      <summary>How do I change my business's currency?</summary>
+      <p>Tap the logo in the top-right corner of any screen to open your Business Profile, then choose from the currency chips or type any 3-letter ISO code (like AUD or SGD). Every amount in the app updates immediately.</p>
+    </details>
+    <details>
+      <summary>Can I import records from a spreadsheet?</summary>
+      <p>Yes. From Settings, choose <strong>Import Data</strong> and pick a CSV file of products, sales, or expenses. We'll show you exactly what will be imported before anything is saved.</p>
+    </details>
+    <details>
+      <summary>Is my business data private?</summary>
+      <p>Yes — your products, orders, and expenses are stored under your account only and no other Monetra user can read or write them. See our <a href="/privacy" style="color: var(--accent-ink)">Privacy Policy</a> for details.</p>
+    </details>
+    <details>
+      <summary>I found a bug or have a feature request.</summary>
+      <p>We'd love to hear it — email us at the address above with what happened (or what you'd like to see) and, if it's a bug, what device and iOS version you're on.</p>
+    </details>
+  </div>
+
+  <footer>
+    Monetra is built and supported independently. We typically reply within 1–2 business days.
+  </footer>
+</div>

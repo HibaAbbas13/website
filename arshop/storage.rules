@@ -1,0 +1,59 @@
+rules_version = '2';
+
+// AR Storefront — asset storage.
+//
+// Paths are split by asset kind rather than lumped under one wildcard, because
+// the size ceiling that makes sense for a scanned 3D model (tens of MB) would be
+// reckless for a logo. Splitting the paths lets each kind carry its own limit.
+//
+// As with Firestore, `shops/{shopId}` uses the owner's uid as the folder name,
+// so ownership is a string compare.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function owns(shopId) {
+      return request.auth != null && request.auth.uid == shopId;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    // .usdz and .glb are frequently handed to the browser with no type at all,
+    // so octet-stream has to be tolerated here. The upload code sets an explicit
+    // contentType; this is the safety net for when it doesn't stick.
+    function isModel() {
+      return request.resource.contentType.matches('model/.*')
+             || request.resource.contentType == 'application/octet-stream';
+    }
+
+    match /shops/{shopId}/branding/{file} {
+      allow read: if true;
+      allow create, update: if owns(shopId)
+                            && isImage()
+                            && request.resource.size < 4 * 1024 * 1024;
+      allow delete: if owns(shopId);
+    }
+
+    match /shops/{shopId}/products/{productId}/photos/{file} {
+      allow read: if true;
+      allow create, update: if owns(shopId)
+                            && isImage()
+                            && request.resource.size < 8 * 1024 * 1024;
+      allow delete: if owns(shopId);
+    }
+
+    match /shops/{shopId}/products/{productId}/models/{file} {
+      allow read: if true;
+      allow create, update: if owns(shopId)
+                            && isModel()
+                            && request.resource.size < 50 * 1024 * 1024;
+      allow delete: if owns(shopId);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

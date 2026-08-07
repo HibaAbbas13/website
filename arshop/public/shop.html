@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Shop</title>
+  <meta name="description" content="Browse products and see them in your own room in 3D, straight from your phone." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <meta name="theme-color" content="#5b5bd6" />
+
+  <!-- Static defaults. Link-preview crawlers (WhatsApp, Facebook, iMessage) do
+       not run JavaScript, so the per-shop name and logo set at runtime never
+       reach them — these generic values are what a shared link actually shows.
+       Making previews shop-specific needs server-side rendering; see README. -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Shop in 3D" />
+  <meta property="og:description" content="Browse products and place them in your own room with augmented reality." />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- The shop id, and therefore every Firestore read and image URL, is only
+       known after JS runs — so the browser can't discover these hosts on its
+       own. Warming the connections here removes a DNS + TLS round trip from the
+       critical path for each of them. -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+  <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin />
+
+  <link rel="stylesheet" href="/assets/app.css" />
+  <!-- model-viewer is NOT loaded here. It is ~300KB and most shops have no 3D
+       models at all, so shop.js fetches it on demand the first time a product
+       actually needs one. Elements created beforehand upgrade automatically
+       once the definition arrives. -->
+  <script type="module" src="/assets/shop.js"></script>
+</head>
+<body>
+
+  <div class="shopbar">
+    <img id="barLogo" class="shopbar-logo" alt="" hidden />
+    <span class="shopbar-name" id="barName"></span>
+    <div class="spacer"></div>
+    <a class="btn small" id="contactBtn" hidden target="_blank" rel="noopener">Message us</a>
+  </div>
+
+  <header class="hero" id="hero">
+    <div class="cover" id="cover" hidden><img id="coverImg" alt="" /></div>
+    <div class="hero-inner">
+      <img id="logo" class="hero-logo" alt="" hidden />
+      <h1 id="shopName">Loading…</h1>
+      <p class="hero-tagline" id="shopTagline" hidden></p>
+      <p class="hero-about" id="about" hidden></p>
+      <div class="socials" id="socials"></div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="section-head">
+      <h2 id="shelfTitle" hidden>Products</h2>
+      <span class="count" id="count" aria-live="polite"></span>
+    </div>
+
+    <div class="searchbar">
+      <label class="sr-only" for="search">Search products</label>
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+      </svg>
+      <input id="search" type="search" placeholder="Search products…" autocomplete="off" />
+      <button class="search-clear" id="searchClear" type="button" aria-label="Clear search" hidden>&times;</button>
+    </div>
+
+    <div class="filters" id="filters" role="group" aria-label="Filter by category" hidden></div>
+
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="state" role="status" aria-live="polite">Loading products…</div>
+
+    <div class="more-wrap">
+      <button class="btn ghost" id="loadMore" hidden>Load more</button>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <img id="footLogo" class="footer-logo" alt="" hidden />
+      <div class="footer-name" id="footName"></div>
+      <p class="footer-tagline" id="footTagline" hidden></p>
+      <div class="socials" id="footSocials"></div>
+      <div class="footer-meta">
+        <span id="footCopy"></span>
+      </div>
+    </div>
+  </footer>
+
+  <dialog id="detail">
+    <div class="dlg-body">
+      <div class="detail-media" id="detailMedia"></div>
+      <h1 id="detailName" style="margin-top:20px"></h1>
+      <div id="detailPriceRow"></div>
+      <p id="detailStock" class="sold-note" hidden></p>
+      <p id="detailDesc" class="muted" style="margin-top:10px"></p>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn ghost" id="detailClose">Close</button>
+      <a class="btn" id="detailOrder" hidden target="_blank" rel="noopener">Order on WhatsApp</a>
+    </div>
+  </dialog>
+
+</body>
+</html>

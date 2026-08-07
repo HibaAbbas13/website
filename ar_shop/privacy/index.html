@@ -1,0 +1,274 @@
+<title>Monetra Privacy Policy</title>
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --panel: #ffffff;
+    --ink: #1b241f;
+    --ink-soft: #566058;
+    --rule: #e0dbcd;
+    --accent: #178c6b;
+    --accent-soft: #e4f1ea;
+    --accent-ink: #0f5c46;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121815;
+      --panel: #1a221d;
+      --ink: #eaeee9;
+      --ink-soft: #a3aca2;
+      --rule: #2c352e;
+      --accent: #3bc79a;
+      --accent-soft: #16302a;
+      --accent-ink: #7fe0bd;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121815; --panel: #1a221d; --ink: #eaeee9; --ink-soft: #a3aca2;
+    --rule: #2c352e; --accent: #3bc79a; --accent-soft: #16302a; --accent-ink: #7fe0bd;
+  }
+  :root[data-theme="light"] {
+    --bg: #f7f5f0; --panel: #ffffff; --ink: #1b241f; --ink-soft: #566058;
+    --rule: #e0dbcd; --accent: #178c6b; --accent-soft: #e4f1ea; --accent-ink: #0f5c46;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.65;
+  }
+  .layout {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 64px 28px 120px;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 56px;
+    align-items: start;
+  }
+  @media (max-width: 760px) {
+    .layout { grid-template-columns: 1fr; }
+    nav.toc { position: static !important; order: 2; }
+  }
+
+  header.page-head {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+  .mark {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: var(--accent-soft);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .mark svg { width: 24px; height: 24px; }
+  .wordmark { font-family: ui-serif, Georgia, "Times New Roman", serif; font-size: 22px; font-weight: 700; color: var(--accent-ink); }
+  .tagline { font-size: 13px; color: var(--ink-soft); margin-top: 1px; }
+
+  h1 {
+    grid-column: 1 / -1;
+    font-family: ui-serif, Georgia, "Times New Roman", serif;
+    font-size: clamp(32px, 4.6vw, 44px);
+    font-weight: 700;
+    line-height: 1.14;
+    text-wrap: balance;
+    margin: 12px 0 0;
+  }
+  .meta {
+    grid-column: 1 / -1;
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 10px 0 40px;
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 48px;
+    font-size: 13.5px;
+  }
+  nav.toc .label { text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); font-size: 11px; margin-bottom: 12px; }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; counter-reset: toc; }
+  nav.toc li { counter-increment: toc; }
+  nav.toc a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    display: flex;
+    gap: 8px;
+  }
+  nav.toc a::before {
+    content: counter(toc, decimal-leading-zero);
+    font-variant-numeric: tabular-nums;
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+  nav.toc a:hover, nav.toc a:focus-visible { color: var(--ink); }
+
+  main { min-width: 0; }
+  section { margin-bottom: 44px; scroll-margin-top: 24px; }
+  section h2 {
+    font-family: ui-serif, Georgia, "Times New Roman", serif;
+    font-size: 23px;
+    margin: 0 0 14px;
+  }
+  section p, section li { max-width: 66ch; color: var(--ink); }
+  section p { margin: 0 0 14px; }
+  section ul { margin: 0 0 14px; padding-left: 22px; }
+  section li { margin-bottom: 8px; }
+  section .soft { color: var(--ink-soft); }
+
+  .callout {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 16px 20px;
+    max-width: 66ch;
+    font-size: 15px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+    margin: 6px 0 14px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--rule);
+  }
+  th { color: var(--ink-soft); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .table-wrap { overflow-x: auto; }
+
+  a.inline { color: var(--accent-ink); }
+
+  footer {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--rule);
+    padding-top: 24px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 20px;
+  }
+</style>
+
+<div class="layout">
+  <header class="page-head">
+    <div class="mark">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 17L9 10L13 14L21 5" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M15 5H21V11" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="wordmark">Monetra</div>
+      <div class="tagline">For creators who mean business.</div>
+    </div>
+  </header>
+
+  <h1>Privacy Policy</h1>
+  <p class="meta">Effective July 20, 2026 · Applies to the Monetra iOS app</p>
+
+  <nav class="toc">
+    <div class="label">On this page</div>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#data-we-collect">Data we collect</a></li>
+      <li><a href="#how-we-use-it">How we use it</a></li>
+      <li><a href="#where-its-stored">Where it's stored</a></li>
+      <li><a href="#sharing">Sharing &amp; third parties</a></li>
+      <li><a href="#payments">Subscriptions &amp; payments</a></li>
+      <li><a href="#your-controls">Your controls</a></li>
+      <li><a href="#children">Children's privacy</a></li>
+      <li><a href="#changes">Changes to this policy</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <section id="overview">
+      <h2>Overview</h2>
+      <p>Monetra is a sales, order, and profit tracker for small business owners and creators. This policy explains exactly what data the app collects, why, and how you can delete it — in plain language, matching what the app actually does.</p>
+      <div class="callout">Monetra has no ads. It uses Firebase Analytics to understand how the app is used (which screens are opened, which actions are taken) — never your business data, and never anything you enter about your products, orders, or customers.</div>
+    </section>
+
+    <section id="data-we-collect">
+      <h2>Data we collect</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Category</th><th>What it includes</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>Account</td><td>Email address, password (encrypted by Firebase Authentication — Monetra never sees or stores it in plain text)</td><td>Sign in, password reset</td></tr>
+            <tr><td>Business profile</td><td>Business name, tagline, contact phone/email, currency, logo image</td><td>Shown on your invoices and throughout the app</td></tr>
+            <tr><td>Business records</td><td>Products, orders, sales, expenses, customer names/phone/address you enter</td><td>The core function of the app</td></tr>
+            <tr><td>Subscription status</td><td>Whether you're on Premium, purchase history</td><td>Unlocking unlimited orders — handled by Apple, see below</td></tr>
+            <tr><td>Usage analytics</td><td>Which screens you open, which actions you take (e.g. "recorded an order"), device type, app version — collected via Firebase Analytics</td><td>Understanding how the app is used so we can improve it</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="soft">Usage analytics never includes what you actually entered — not your business name, not a customer's name, not an order amount. Only that an action of a certain type happened. Monetra does not request access to contacts, location, camera (beyond the optional photo picker for a logo image you choose), microphone, or health data.</p>
+    </section>
+
+    <section id="how-we-use-it">
+      <h2>How we use it</h2>
+      <ul>
+        <li>To show your dashboard, orders, insights, and receipts — calculated from data you enter, on your device and account only.</li>
+        <li>To generate a branded PDF/shareable receipt when you choose to send one to a customer.</li>
+        <li>To enforce the free plan's monthly order limit and unlock Premium once purchased.</li>
+        <li>To understand which features are actually used, so development effort goes toward what matters — via Firebase Analytics event counts, not the content of what you entered.</li>
+      </ul>
+      <p>We do not use your data for advertising, and we do not build any profile of you beyond what's needed to run your own account.</p>
+    </section>
+
+    <section id="where-its-stored">
+      <h2>Where it's stored</h2>
+      <p>Your data is stored in Google Firebase (Firestore and Firebase Authentication), under an account-scoped path only your signed-in account can read or write. Security rules enforce this at the infrastructure level — no other Monetra user, including us, can query your data through the app. Data syncs automatically across your devices and is cached locally so the app keeps working offline.</p>
+    </section>
+
+    <section id="sharing">
+      <h2>Sharing &amp; third parties</h2>
+      <p>We do not sell your data, and we do not share it with advertisers or data brokers. The only third parties involved are infrastructure processors that make the app work:</p>
+      <ul>
+        <li><strong>Google Firebase</strong> — authentication and database hosting.</li>
+        <li><strong>Firebase Analytics (Google)</strong> — aggregate usage analytics (screen views, feature usage counts). Does not receive your business data, and is configured to not use data for advertising.</li>
+        <li><strong>Apple</strong> — App Store distribution and, if you subscribe, payment processing via StoreKit. Monetra never sees your card details.</li>
+      </ul>
+    </section>
+
+    <section id="payments">
+      <h2>Subscriptions &amp; payments</h2>
+      <p>Monetra Premium is a monthly auto-renewing subscription billed and managed entirely through your Apple ID (App Store). Payment, billing history, and cancellation are handled by Apple — you can manage or cancel anytime in <em>Settings → [your name] → Subscriptions</em> on your device. Monetra only receives confirmation of your subscription status, never your payment information.</p>
+    </section>
+
+    <section id="your-controls">
+      <h2>Your controls</h2>
+      <ul>
+        <li><strong>Edit anything</strong> — every product, order, expense, and profile field can be changed or removed from within the app at any time.</li>
+        <li><strong>Reset your password</strong> — from Settings → Forgot Password.</li>
+        <li><strong>Delete your account</strong> — Settings → Delete Account permanently and immediately erases your account and every record tied to it. This cannot be undone and there is no recovery period.</li>
+      </ul>
+    </section>
+
+    <section id="children">
+      <h2>Children's privacy</h2>
+      <p>Monetra is intended for business owners and is not directed at children under 13. We do not knowingly collect data from children under 13.</p>
+    </section>
+
+    <section id="changes">
+      <h2>Changes to this policy</h2>
+      <p>If this policy changes in a material way, we'll update the effective date above. Continued use of Monetra after a change means you accept the updated policy.</p>
+    </section>
+
+    <section id="contact">
+      <h2>Contact</h2>
+      <p>Questions about this policy or your data can be sent to <a class="inline" href="mailto:hibaabbas1306@gmail.com">hibaabbas1306@gmail.com</a>.</p>
+    </section>
+
+    <footer>Monetra — For creators who mean business.</footer>
+  </main>
+</div>
