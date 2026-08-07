@@ -52,8 +52,6 @@ function normalizeDescription(text) {
   let t = String(text).replace(/\r\n/g, "\n");
   // "* foo * bar" → each bullet on its own line (skip ones already lined up)
   t = t.replace(/([^\n])\s+\*\s+/g, "$1\n* ");
-  // "- foo - bar" when used as list markers mid-line
-  t = t.replace(/([^\n])\s+-\s+(?=\S)/g, "$1\n- ");
   t = t.replace(/([^\n])\s*(Short\s*Description\s*:)/gi, "$1\n\n$2");
   return t.trim();
 }
@@ -242,6 +240,152 @@ function buildMedia(product, alt) {
   return img;
 }
 
+/**
+ * Swipeable photo gallery for the detail dialog. Grid tiles keep using
+ * buildMedia() (cover only); customers need every uploaded angle here.
+ */
+function buildCarousel(urls, alt) {
+  const root = document.createElement("div");
+  root.className = "carousel";
+  root.setAttribute("role", "region");
+  root.setAttribute("aria-roledescription", "carousel");
+  root.setAttribute("aria-label", alt || "Product photos");
+
+  const frame = document.createElement("div");
+  frame.className = "carousel-frame";
+
+  const img = document.createElement("img");
+  img.alt = alt || "Product";
+  img.draggable = false;
+  frame.appendChild(img);
+
+  const prev = document.createElement("button");
+  prev.type = "button";
+  prev.className = "carousel-nav prev";
+  prev.setAttribute("aria-label", "Previous photo");
+  prev.textContent = "‹";
+
+  const next = document.createElement("button");
+  next.type = "button";
+  next.className = "carousel-nav next";
+  next.setAttribute("aria-label", "Next photo");
+  next.textContent = "›";
+
+  const dots = document.createElement("div");
+  dots.className = "carousel-dots";
+  dots.setAttribute("role", "tablist");
+  dots.setAttribute("aria-label", "Choose photo");
+
+  const count = document.createElement("span");
+  count.className = "carousel-count";
+
+  let index = 0;
+
+  function show(i) {
+    index = ((i % urls.length) + urls.length) % urls.length;
+    img.src = urls[index];
+    img.alt = `${alt || "Product"} — photo ${index + 1} of ${urls.length}`;
+    count.textContent = `${index + 1} / ${urls.length}`;
+    for (const [di, dot] of [...dots.children].entries()) {
+      dot.setAttribute("aria-current", di === index ? "true" : "false");
+    }
+  }
+
+  for (let i = 0; i < urls.length; i++) {
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.className = "carousel-dot";
+    dot.setAttribute("aria-label", `Photo ${i + 1}`);
+    dot.addEventListener("click", (e) => {
+      e.stopPropagation();
+      show(i);
+    });
+    dots.appendChild(dot);
+  }
+
+  prev.addEventListener("click", (e) => {
+    e.stopPropagation();
+    show(index - 1);
+  });
+  next.addEventListener("click", (e) => {
+    e.stopPropagation();
+    show(index + 1);
+  });
+
+  // Horizontal swipe without fighting vertical scroll on the dialog body.
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+  root.addEventListener(
+    "pointerdown",
+    (e) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      tracking = true;
+      startX = e.clientX;
+      startY = e.clientY;
+    },
+    { passive: true }
+  );
+  root.addEventListener("pointerup", (e) => {
+    if (!tracking) return;
+    tracking = false;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+    show(index + (dx < 0 ? 1 : -1));
+  });
+  root.addEventListener("pointercancel", () => {
+    tracking = false;
+  });
+
+  root.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      show(index - 1);
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      show(index + 1);
+    }
+  });
+  root.tabIndex = 0;
+
+  root.append(frame, prev, next, dots, count);
+  show(0);
+  return root;
+}
+
+/** Detail media: all photos when there is no interactive GLB model. */
+function buildDetailMedia(product, alt) {
+  const urls = (product.photoUrls || []).filter(Boolean);
+
+  if (product.modelGlbUrl) {
+    return buildMedia(product, alt);
+  }
+
+  if (urls.length > 1) {
+    const carousel = buildCarousel(urls, alt);
+
+    if (product.modelUsdzUrl && supportsQuickLook()) {
+      const a = document.createElement("a");
+      a.rel = "ar";
+      a.href = product.modelUsdzUrl;
+      a.className = "ar-btn";
+      a.textContent = "View in your room";
+      // Quick Look needs an <img> descendant; reuse the first photo.
+      const hidden = document.createElement("img");
+      hidden.src = urls[0];
+      hidden.alt = "";
+      hidden.hidden = true;
+      a.prepend(hidden);
+      carousel.appendChild(a);
+    }
+
+    return carousel;
+  }
+
+  return buildMedia(product, alt);
+}
+
 function tileFor(product, shop) {
   const inStock = isInStock(product);
   const tile = document.createElement("div");
@@ -420,7 +564,9 @@ function whatsappLink(shop, product) {
 function openDetail(product, shop) {
   const inStock = isInStock(product);
 
-  $("detailMedia").replaceChildren(buildMedia(product, product.name || "Product"));
+  $("detailMedia").replaceChildren(
+    buildDetailMedia(product, product.name || "Product")
+  );
   $("detailName").textContent = product.name || "Untitled";
 
   const prices = priceRow(product, product.currency || shop.currency, money);
@@ -428,7 +574,7 @@ function openDetail(product, shop) {
   $("detailPriceRow").replaceChildren(prices);
 
   setText($("detailStock"), inStock ? "" : "Sold out — currently unavailable");
-  setText($("detailDesc"), product.description);
+  setText($("detailDesc"), normalizeDescription(product.description));
 
   // Ordering is hidden rather than disabled when out of stock: a WhatsApp
   // message about an item the shop can't supply wastes the customer's time and
