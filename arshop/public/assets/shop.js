@@ -42,6 +42,22 @@ function setText(el, text) {
   el.hidden = !text;
 }
 
+/**
+ * Admin paste often jams bullets and section labels onto one line. Split those
+ * onto their own lines so white-space: pre-wrap can show a readable list.
+ * Still returns plain text — callers must assign via textContent.
+ */
+function normalizeDescription(text) {
+  if (!text) return "";
+  let t = String(text).replace(/\r\n/g, "\n");
+  // "* foo * bar" → each bullet on its own line (skip ones already lined up)
+  t = t.replace(/([^\n])\s+\*\s+/g, "$1\n* ");
+  // "- foo - bar" when used as list markers mid-line
+  t = t.replace(/([^\n])\s+-\s+(?=\S)/g, "$1\n- ");
+  t = t.replace(/([^\n])\s*(Short\s*Description\s*:)/gi, "$1\n\n$2");
+  return t.trim();
+}
+
 // ------------------------------------------------------- filters & paging
 
 const PAGE_SIZE = 12;
