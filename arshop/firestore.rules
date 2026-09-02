@@ -74,6 +74,27 @@ service cloud.firestore {
       }
     }
 
+    // ---------------------------------------------------------------
+    // Husn-e-Tarteeb storefront — a different website, same Firebase
+    // project. It is a single-owner shop, so there is no /shops tree and
+    // no per-tenant uid: write access is one specific signed-in account.
+    //
+    // Matching on the token email rather than a hard-coded uid keeps this
+    // readable and survives the account being recreated. It is safe because
+    // Firebase will not issue a second account for an email already in use —
+    // but that means the account must actually exist. Create it before
+    // deploying these rules, or the address is left claimable.
+    // ---------------------------------------------------------------
+    function isHusnAdmin() {
+      return request.auth != null
+             && request.auth.token.email == 'hibaabbas1306@gmail.com';
+    }
+
+    match /husnetarteeb_products/{productId} {
+      allow read: if true;              // the storefront is public
+      allow write: if isHusnAdmin();
+    }
+
     // Anything not matched above is denied.
     match /{document=**} {
       allow read, write: if false;

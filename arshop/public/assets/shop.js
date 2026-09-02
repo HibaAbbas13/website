@@ -13,10 +13,16 @@ import {
 } from "./db-shop.js";
 import {
   mediaPlaceholder,
+  mediaElement,
+  coverMedia,
+  isVideoMedia,
+  observeAutoplayVideos,
   applyAccent,
   money,
   priceRow,
   isInStock,
+  isQuoteOnly,
+  QUOTE_LABEL,
 } from "./ui.js";
 
 const $ = (id) => document.getElementById(id);
@@ -191,16 +197,18 @@ function supportsQuickLook() {
  *                    the photo is shown and iOS Safari gets a native AR Quick
  *                    Look link (<a rel="ar">). Other platforms see the photo.
  *                    This is the common case for iPhone-scanned products.
- *  - Neither       → photo, or a deliberate placeholder when there isn't one.
+ *  - Neither       → cover photo/video, or a deliberate placeholder.
  */
 function buildMedia(product, alt) {
-  const photo = (product.photoUrls || [])[0] || "";
+  const cover = coverMedia(product);
+  const poster = cover && !cover.video ? cover.url : "";
 
   if (product.modelGlbUrl) {
+    ensureModelViewer();
     const mv = document.createElement("model-viewer");
     mv.src = product.modelGlbUrl;
     if (product.modelUsdzUrl) mv.setAttribute("ios-src", product.modelUsdzUrl);
-    if (photo) mv.poster = photo;
+    if (poster) mv.poster = poster;
     mv.alt = alt;
     mv.setAttribute("ar", "");
     mv.setAttribute("ar-modes", "webxr scene-viewer quick-look");
@@ -217,85 +225,96 @@ function buildMedia(product, alt) {
     return mv;
   }
 
-  if (!photo) return mediaPlaceholder();
+  if (!cover) return mediaPlaceholder();
 
-  const img = document.createElement("img");
-  img.src = photo;
-  img.alt = alt;
-  img.loading = "lazy";
+  const el = mediaElement(cover.url, {
+    path: cover.path,
+    alt,
+    controls: false,
+  });
 
-  if (product.modelUsdzUrl && supportsQuickLook()) {
+  if (product.modelUsdzUrl && supportsQuickLook() && !cover.video) {
     const a = document.createElement("a");
     a.rel = "ar";
     a.href = product.modelUsdzUrl;
     a.style.cssText = "display:block;width:100%;height:100%";
     // Quick Look only activates when the <a rel="ar"> contains an <img>.
-    a.appendChild(img);
+    a.appendChild(el);
     const hint = document.createElement("span");
     hint.className = "ar-btn";
     hint.textContent = "View in your room";
     a.appendChild(hint);
     return a;
   }
-  return img;
+  return el;
 }
 
 /**
- * Swipeable photo gallery for the detail dialog. Grid tiles keep using
- * buildMedia() (cover only); customers need every uploaded angle here.
+ * Swipeable media gallery for the detail dialog. Grid tiles keep using
+ * buildMedia() (cover only); customers need every uploaded photo/video here.
  */
-function buildCarousel(urls, alt) {
+function buildCarousel(items, alt) {
   const root = document.createElement("div");
   root.className = "carousel";
   root.setAttribute("role", "region");
   root.setAttribute("aria-roledescription", "carousel");
-  root.setAttribute("aria-label", alt || "Product photos");
+  root.setAttribute("aria-label", alt || "Product media");
 
   const frame = document.createElement("div");
   frame.className = "carousel-frame";
 
-  const img = document.createElement("img");
-  img.alt = alt || "Product";
-  img.draggable = false;
-  frame.appendChild(img);
-
   const prev = document.createElement("button");
   prev.type = "button";
   prev.className = "carousel-nav prev";
-  prev.setAttribute("aria-label", "Previous photo");
+  prev.setAttribute("aria-label", "Previous");
   prev.textContent = "‹";
 
   const next = document.createElement("button");
   next.type = "button";
   next.className = "carousel-nav next";
-  next.setAttribute("aria-label", "Next photo");
+  next.setAttribute("aria-label", "Next");
   next.textContent = "›";
 
   const dots = document.createElement("div");
   dots.className = "carousel-dots";
   dots.setAttribute("role", "tablist");
-  dots.setAttribute("aria-label", "Choose photo");
+  dots.setAttribute("aria-label", "Choose media");
 
   const count = document.createElement("span");
   count.className = "carousel-count";
 
   let index = 0;
+  let active = null;
 
   function show(i) {
-    index = ((i % urls.length) + urls.length) % urls.length;
-    img.src = urls[index];
-    img.alt = `${alt || "Product"} — photo ${index + 1} of ${urls.length}`;
-    count.textContent = `${index + 1} / ${urls.length}`;
+    index = ((i % items.length) + items.length) % items.length;
+    const item = items[index];
+    if (active?.tagName === "VIDEO") {
+      active.pause();
+      active.removeAttribute("src");
+      active.load();
+    }
+    active = mediaElement(item.url, {
+      path: item.path,
+      alt: `${alt || "Product"} — ${index + 1} of ${items.length}`,
+      controls: item.video,
+    });
+    if (active.tagName === "IMG") active.draggable = false;
+    frame.replaceChildren(active);
+    count.textContent = `${index + 1} / ${items.length}`;
     for (const [di, dot] of [...dots.children].entries()) {
       dot.setAttribute("aria-current", di === index ? "true" : "false");
     }
   }
 
-  for (let i = 0; i < urls.length; i++) {
+  for (let i = 0; i < items.length; i++) {
     const dot = document.createElement("button");
     dot.type = "button";
     dot.className = "carousel-dot";
-    dot.setAttribute("aria-label", `Photo ${i + 1}`);
+    dot.setAttribute(
+      "aria-label",
+      items[i].video ? `Video ${i + 1}` : `Photo ${i + 1}`
+    );
     dot.addEventListener("click", (e) => {
       e.stopPropagation();
       show(i);
@@ -313,6 +332,7 @@ function buildCarousel(urls, alt) {
   });
 
   // Horizontal swipe without fighting vertical scroll on the dialog body.
+  // Ignore swipes that start on native video controls.
   let startX = 0;
   let startY = 0;
   let tracking = false;
@@ -320,6 +340,7 @@ function buildCarousel(urls, alt) {
     "pointerdown",
     (e) => {
       if (e.pointerType === "mouse" && e.button !== 0) return;
+      if (e.target.closest("video")) return;
       tracking = true;
       startX = e.clientX;
       startY = e.clientY;
@@ -354,36 +375,155 @@ function buildCarousel(urls, alt) {
   return root;
 }
 
-/** Detail media: all photos when there is no interactive GLB model. */
+/** Detail media: all photos/videos when there is no interactive GLB model. */
 function buildDetailMedia(product, alt) {
-  const urls = (product.photoUrls || []).filter(Boolean);
+  const urls = product.photoUrls || [];
+  const paths = product.photoPaths || [];
+  const items = urls
+    .map((url, i) =>
+      url
+        ? {
+            url,
+            path: paths[i] || "",
+            video: isVideoMedia(url, paths[i]),
+          }
+        : null
+    )
+    .filter(Boolean);
 
   if (product.modelGlbUrl) {
     return buildMedia(product, alt);
   }
 
-  if (urls.length > 1) {
-    const carousel = buildCarousel(urls, alt);
+  if (items.length > 1) {
+    const carousel = buildCarousel(items, alt);
 
     if (product.modelUsdzUrl && supportsQuickLook()) {
-      const a = document.createElement("a");
-      a.rel = "ar";
-      a.href = product.modelUsdzUrl;
-      a.className = "ar-btn";
-      a.textContent = "View in your room";
-      // Quick Look needs an <img> descendant; reuse the first photo.
-      const hidden = document.createElement("img");
-      hidden.src = urls[0];
-      hidden.alt = "";
-      hidden.hidden = true;
-      a.prepend(hidden);
-      carousel.appendChild(a);
+      const still = items.find((m) => !m.video);
+      if (still) {
+        const a = document.createElement("a");
+        a.rel = "ar";
+        a.href = product.modelUsdzUrl;
+        a.className = "ar-btn";
+        a.textContent = "View in your room";
+        // Quick Look needs an <img> descendant.
+        const hidden = document.createElement("img");
+        hidden.src = still.url;
+        hidden.alt = "";
+        hidden.hidden = true;
+        a.prepend(hidden);
+        carousel.appendChild(a);
+      }
     }
 
     return carousel;
   }
 
+  // Single video: show controls in the detail sheet (tile stays muted loop).
+  if (items.length === 1 && items[0].video) {
+    return mediaElement(items[0].url, {
+      path: items[0].path,
+      alt,
+      controls: true,
+    });
+  }
+
   return buildMedia(product, alt);
+}
+
+// --------------------------------------------------- product of the week
+
+/**
+ * The featured banner.
+ *
+ * Which product is featured is one field on the shop document
+ * (`featuredProductId`), set from a dropdown in the dashboard — so changing the
+ * Product of the Week is picking a different product, never touching this
+ * layout. An id that no longer resolves (product deleted, hidden, or the field
+ * left empty) simply hides the section rather than leaving a broken banner at
+ * the top of the shop.
+ */
+function featuredProduct(shop, products) {
+  const id = String(shop?.featuredProductId || "").trim();
+  if (!id) return null;
+  return products.find((p) => p.id === id) || null;
+}
+
+function renderFeatured(shop, products) {
+  const section = $("featured");
+  const product = featuredProduct(shop, products);
+
+  // While the customer is searching or browsing a category they are looking for
+  // something specific; a promo for a different product on top of their results
+  // is in the way. It comes back as soon as they clear the filter.
+  const show = Boolean(product) && !searchTerm && !activeCategory;
+  section.hidden = !show;
+  if (!show) {
+    section.replaceChildren();
+    return;
+  }
+
+  const inStock = isInStock(product);
+  const name = product.name || "Untitled";
+
+  const media = document.createElement("div");
+  media.className = "featured-media";
+  const cover = coverMedia(product);
+  media.appendChild(
+    cover
+      ? mediaElement(cover.url, { path: cover.path, alt: name, controls: false })
+      : mediaPlaceholder("No photo yet")
+  );
+
+  const badge = document.createElement("span");
+  badge.className = "featured-badge";
+  badge.textContent = "Product of the week";
+
+  const heading = document.createElement("h2");
+  heading.className = "featured-name";
+  heading.id = "featuredTitle";
+  heading.textContent = name;
+
+  const prices = priceRow(product, product.currency || shop.currency, money, {
+    contactHref: quoteLink(shop, product),
+  });
+  prices.classList.add("featured-price");
+
+  const cta = document.createElement("button");
+  cta.type = "button";
+  cta.className = "btn featured-cta";
+  cta.textContent = isQuoteOnly(product) ? "View product" : "Shop now";
+
+  const info = document.createElement("div");
+  info.className = "featured-info";
+  info.append(badge, heading, prices);
+
+  if (product.description) {
+    const desc = document.createElement("p");
+    desc.className = "featured-desc";
+    desc.textContent = product.description;
+    info.appendChild(desc);
+  }
+
+  if (!inStock) {
+    const sold = document.createElement("p");
+    sold.className = "featured-sold";
+    sold.textContent = "Sold out — currently unavailable";
+    info.appendChild(sold);
+  }
+
+  info.appendChild(cta);
+  section.replaceChildren(media, info);
+
+  const open = (e) => {
+    // The quotation link goes straight to WhatsApp; opening the dialog behind
+    // it would leave the customer looking at a dialog when they come back.
+    if (e.target.closest(".quote-link")) return;
+    openDetail(product, shop);
+  };
+  cta.addEventListener("click", open);
+  media.addEventListener("click", open);
+  observeAutoplayVideos(section);
 }
 
 function tileFor(product, shop) {
@@ -424,7 +564,9 @@ function tileFor(product, shop) {
 
   body.append(
     name,
-    priceRow(product, product.currency || shop.currency, money)
+    priceRow(product, product.currency || shop.currency, money, {
+      contactHref: quoteLink(shop, product),
+    })
   );
 
   if (product.description) {
@@ -449,7 +591,9 @@ function tileFor(product, shop) {
   tile.addEventListener("click", (e) => {
     // The AR button lives inside the card; letting its click bubble would open
     // the dialog behind the AR viewer the moment the customer taps it.
-    if (e.target.closest(".ar-btn, a[rel~='ar']")) return;
+    // Same reasoning for the quotation link: it opens WhatsApp, and letting the
+    // click bubble would leave the detail dialog open behind the chat.
+    if (e.target.closest(".ar-btn, a[rel~='ar'], .quote-link")) return;
     open();
   });
   tile.addEventListener("keydown", (e) => {
@@ -557,19 +701,37 @@ detail.addEventListener("click", (e) => {
 function whatsappLink(shop, product) {
   const number = String(shop.whatsapp || "").replace(/\D/g, "");
   if (!number) return "";
-  const text = `Hi! I'm interested in "${product.name}" from ${shop.name}.`;
+  const text = isQuoteOnly(product)
+    ? `Hi! Could I get a quotation for "${product.name}" from ${shop.name}?`
+    : `Hi! I'm interested in "${product.name}" from ${shop.name}.`;
   return `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+}
+
+/**
+ * Destination for a "DM for Quotation" line, or "" when there is nowhere to
+ * send the customer — priceRow then renders it as plain text rather than a
+ * link that goes nowhere. Stock is deliberately ignored: asking the price of
+ * something currently unavailable is a normal enquiry.
+ */
+function quoteLink(shop, product) {
+  return isQuoteOnly(product) ? whatsappLink(shop, product) : "";
 }
 
 function openDetail(product, shop) {
   const inStock = isInStock(product);
 
-  $("detailMedia").replaceChildren(
-    buildDetailMedia(product, product.name || "Product")
-  );
+  const media = buildDetailMedia(product, product.name || "Product");
+  $("detailMedia").replaceChildren(media);
+  // If every photo/video URL failed, still show a deliberate empty state.
+  if (!$("detailMedia").childElementCount) {
+    $("detailMedia").appendChild(mediaPlaceholder("No photo yet"));
+  }
+
   $("detailName").textContent = product.name || "Untitled";
 
-  const prices = priceRow(product, product.currency || shop.currency, money);
+  const prices = priceRow(product, product.currency || shop.currency, money, {
+    contactHref: quoteLink(shop, product),
+  });
   prices.classList.add("detail-price");
   $("detailPriceRow").replaceChildren(prices);
 
@@ -582,9 +744,14 @@ function openDetail(product, shop) {
   const order = $("detailOrder");
   const link = inStock ? whatsappLink(shop, product) : "";
   order.hidden = !link;
+  // A quoted product has no price to order at yet, so the button asks for one
+  // instead of promising a checkout the shop can't honour.
+  order.textContent = isQuoteOnly(product) ? QUOTE_LABEL : "Order on WhatsApp";
   if (link) order.href = link;
 
   detail.showModal();
+  // Fresh open should start at the photo, not mid-scroll from a previous product.
+  $("detail").querySelector(".dlg-body")?.scrollTo?.(0, 0);
 }
 
 // ------------------------------------------------------------------- boot
@@ -598,10 +765,33 @@ function openDetail(product, shop) {
  * lookup on localhost only, since a custom domain can't otherwise be exercised
  * in local development.
  */
+const idCacheKey = (kind, key) => `arshop:id:v1:${kind}:${key}`;
+const bootCacheKey = (shopId) => `arshop:boot:v1:${shopId}`;
+
+function readJson(key) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeJson(key, value) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Private mode / quota — caching is a speedup, never required.
+  }
+}
+
 async function resolveShopId() {
   const slug = currentSlug();
   if (slug) {
+    const cached = sessionStorage.getItem(idCacheKey("slug", slug));
+    if (cached) return { id: cached, label: `“${slug}”` };
     const id = await shopIdForSlug(slug);
+    if (id) sessionStorage.setItem(idCacheKey("slug", slug), id);
     return { id, label: `“${slug}”` };
   }
 
@@ -611,7 +801,10 @@ async function resolveShopId() {
     : null;
   const host = override || location.hostname;
 
+  const cached = sessionStorage.getItem(idCacheKey("host", host));
+  if (cached) return { id: cached, label: host };
   const id = await shopIdForDomain(host);
+  if (id) sessionStorage.setItem(idCacheKey("host", host), id);
   return { id, label: host };
 }
 
@@ -637,6 +830,53 @@ function showSkeletons(n = 4) {
   setState("");
 }
 
+function applyShopChrome(s) {
+  if (!s) return;
+  document.title = s.name || "Shop";
+  $("shopName").textContent = s.name || "Shop";
+  $("barName").textContent = s.name || "Shop";
+  setText($("shopTagline"), s.tagline);
+  setText($("about"), s.about);
+  applyAccent(s.accent);
+
+  for (const el of [$("logo"), $("barLogo")]) {
+    el.hidden = !s.logoUrl;
+    if (s.logoUrl) el.src = s.logoUrl;
+  }
+
+  // Use the shop's own logo as the browser-tab icon. A storefront on a
+  // custom domain showing the platform's generic mark looks like someone
+  // else's site; the shop's own logo makes the tab unmistakably theirs.
+  if (s.logoUrl) {
+    let icon = document.querySelector('link[rel="icon"]');
+    if (!icon) {
+      icon = document.createElement("link");
+      icon.rel = "icon";
+      document.head.appendChild(icon);
+    }
+    icon.href = s.logoUrl;
+    icon.removeAttribute("type"); // it's a PNG/JPEG now, not the SVG default
+  }
+
+  // An <img> rather than a CSS background: building a `url("…")` string
+  // from owner-supplied data is a CSS-injection surface, and this also
+  // gets proper image decoding and error handling for free.
+  const cover = $("cover");
+  cover.hidden = !s.coverUrl;
+  $("hero").classList.toggle("has-cover", Boolean(s.coverUrl));
+  // `cover-mode` on <body> lets the top bar float over the image; the CSS
+  // needs to know from an ancestor of the bar, not from the hero.
+  document.body.classList.toggle("cover-mode", Boolean(s.coverUrl));
+  if (s.coverUrl) $("coverImg").src = s.coverUrl;
+
+  const number = String(s.whatsapp || "").replace(/\D/g, "");
+  const contact = $("contactBtn");
+  contact.hidden = !number;
+  if (number) contact.href = `https://wa.me/${number}`;
+
+  renderSocials(s);
+}
+
 async function main() {
   showSkeletons();
   const { id: shopId, label } = await resolveShopId();
@@ -655,13 +895,17 @@ async function main() {
     setState("Couldn’t load this shop. Check your connection and refresh.");
   };
 
-  // Header and products stream in independently, so render whenever either
-  // arrives and skip until both are present.
-  const render = () => {
-    if (!shop || !products) return;
+  // Paint the grid as soon as products arrive. Currency/WhatsApp fall back to
+  // product fields / empty until the shop document lands — previously the grid
+  // waited on both snapshots even though tiles mostly need the product list.
+  const shopForTiles = () =>
+    shop || { currency: "PKR", name: "", whatsapp: "", published: true };
 
-    if (!shop.published) {
+  const render = () => {
+    if (!products) return;
+    if (shop && shop.published === false) {
       grid.replaceChildren();
+      $("featured").hidden = true;
       $("filters").hidden = true;
       $("loadMore").hidden = true;
       $("count").textContent = "";
@@ -704,9 +948,12 @@ async function main() {
       );
     }
 
+    renderFeatured(shop, products);
+
     const matching = products.filter((p) => matchesFilter(p) && matchesSearch(p));
     const page = matching.slice(0, visibleCount);
-    grid.replaceChildren(...page.map((p) => tileFor(p, shop)));
+    grid.replaceChildren(...page.map((p) => tileFor(p, shopForTiles())));
+    observeAutoplayVideos(grid);
 
     $("shelfTitle").hidden = products.length === 0;
     $("count").textContent = matching.length
@@ -729,7 +976,24 @@ async function main() {
     else setState("");
 
     $("searchClear").hidden = !searchTerm;
+
+    if (shop && products) {
+      writeJson(bootCacheKey(shopId), {
+        shop,
+        products,
+        savedAt: Date.now(),
+      });
+    }
   };
+
+  // Instant paint on repeat visits, then live snapshots refresh.
+  const warm = readJson(bootCacheKey(shopId));
+  if (warm?.shop && Array.isArray(warm.products)) {
+    shop = warm.shop;
+    products = warm.products;
+    applyShopChrome(shop);
+    render();
+  }
 
   $("loadMore").addEventListener("click", () => {
     visibleCount += PAGE_SIZE;
@@ -767,49 +1031,7 @@ async function main() {
         setState("This shop is no longer available.");
         return;
       }
-      document.title = s.name || "Shop";
-      $("shopName").textContent = s.name || "Shop";
-      $("barName").textContent = s.name || "Shop";
-      setText($("shopTagline"), s.tagline);
-      setText($("about"), s.about);
-      applyAccent(s.accent);
-
-      for (const el of [$("logo"), $("barLogo")]) {
-        el.hidden = !s.logoUrl;
-        if (s.logoUrl) el.src = s.logoUrl;
-      }
-
-      // Use the shop's own logo as the browser-tab icon. A storefront on a
-      // custom domain showing the platform's generic mark looks like someone
-      // else's site; the shop's own logo makes the tab unmistakably theirs.
-      if (s.logoUrl) {
-        let icon = document.querySelector('link[rel="icon"]');
-        if (!icon) {
-          icon = document.createElement("link");
-          icon.rel = "icon";
-          document.head.appendChild(icon);
-        }
-        icon.href = s.logoUrl;
-        icon.removeAttribute("type"); // it's a PNG/JPEG now, not the SVG default
-      }
-
-      // An <img> rather than a CSS background: building a `url("…")` string
-      // from owner-supplied data is a CSS-injection surface, and this also
-      // gets proper image decoding and error handling for free.
-      const cover = $("cover");
-      cover.hidden = !s.coverUrl;
-      $("hero").classList.toggle("has-cover", Boolean(s.coverUrl));
-      // `cover-mode` on <body> lets the top bar float over the image; the CSS
-      // needs to know from an ancestor of the bar, not from the hero.
-      document.body.classList.toggle("cover-mode", Boolean(s.coverUrl));
-      if (s.coverUrl) $("coverImg").src = s.coverUrl;
-
-      const number = String(s.whatsapp || "").replace(/\D/g, "");
-      const contact = $("contactBtn");
-      contact.hidden = !number;
-      if (number) contact.href = `https://wa.me/${number}`;
-
-      renderSocials(s);
+      applyShopChrome(s);
       render();
     },
     onStreamError

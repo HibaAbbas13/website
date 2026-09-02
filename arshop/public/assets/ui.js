@@ -1,5 +1,102 @@
 // Small shared view helpers used by both the storefront and the dashboard.
 
+const VIDEO_EXT = /\.(mp4|webm|mov)(?:$|[?#])/i;
+const VIDEO_MIME = /^video\/(mp4|webm|quicktime)$/i;
+/** Client + Storage ceiling for product videos (bytes). */
+export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+
+/** Strip query/hash so Firebase download URLs still match by extension. */
+function mediaPathname(value) {
+  const raw = String(value || "");
+  try {
+    return decodeURIComponent(new URL(raw, "https://local.invalid").pathname);
+  } catch {
+    return raw.split("?")[0].split("#")[0];
+  }
+}
+
+/** True when a Storage path or download URL points at a product video. */
+export function isVideoMedia(url, path = "") {
+  return VIDEO_EXT.test(mediaPathname(path)) || VIDEO_EXT.test(mediaPathname(url));
+}
+
+/** Classify a File from the product media picker. */
+export function mediaKindFromFile(file) {
+  const name = file?.name || "";
+  const type = file?.type || "";
+  if (VIDEO_MIME.test(type) || VIDEO_EXT.test(name)) return "video";
+  if (type.startsWith("image/") || /\.(jpe?g|png|webp|gif)$/i.test(name)) {
+    return "image";
+  }
+  return null;
+}
+
+export function videoContentType(filename, mime = "") {
+  if (VIDEO_MIME.test(mime)) return mime;
+  const ext = String(filename || "").toLowerCase().split(".").pop();
+  if (ext === "webm") return "video/webm";
+  if (ext === "mov") return "video/quicktime";
+  return "video/mp4";
+}
+
+export function videoExtension(filename, mime = "") {
+  const fromName = String(filename || "").toLowerCase().split(".").pop();
+  if (fromName === "mp4" || fromName === "webm" || fromName === "mov") return fromName;
+  if (mime === "video/webm") return "webm";
+  if (mime === "video/quicktime") return "mov";
+  return "mp4";
+}
+
+/**
+ * Prefer the first still image for covers / AR posters; fall back to the first
+ * media item (which may be a video) when the product has only videos.
+ */
+export function coverMedia(product) {
+  const urls = product?.photoUrls || [];
+  const paths = product?.photoPaths || [];
+  for (let i = 0; i < urls.length; i++) {
+    if (!urls[i] || isVideoMedia(urls[i], paths[i])) continue;
+    return { url: urls[i], path: paths[i] || "", video: false, index: i };
+  }
+  if (urls[0]) {
+    return {
+      url: urls[0],
+      path: paths[0] || "",
+      video: isVideoMedia(urls[0], paths[0]),
+      index: 0,
+    };
+  }
+  return null;
+}
+
+/** Start muted tile videos when they enter the viewport. */
+export function observeAutoplayVideos(root = document) {
+  const videos = root.querySelectorAll?.("video[data-autoplay-when-visible]") || [];
+  if (!videos.length) return;
+  if (!("IntersectionObserver" in window)) {
+    for (const v of videos) {
+      v.autoplay = true;
+      v.play?.().catch(() => {});
+    }
+    return;
+  }
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const v = entry.target;
+        if (!(v instanceof HTMLVideoElement)) continue;
+        if (entry.isIntersecting) {
+          v.play?.().catch(() => {});
+        } else {
+          v.pause?.();
+        }
+      }
+    },
+    { rootMargin: "100px", threshold: 0.15 }
+  );
+  for (const v of videos) io.observe(v);
+}
+
 /**
  * Placeholder shown where a product image would go.
  *
@@ -28,6 +125,42 @@ export function mediaPlaceholder(caption = "") {
   return wrap;
 }
 
+function swapBrokenMedia(el) {
+  el.replaceWith(mediaPlaceholder("Photo unavailable"));
+}
+
+/** Build an <img> or <video> for a product media URL. */
+export function mediaElement(url, { path = "", alt = "", controls = false } = {}) {
+  if (!url) return mediaPlaceholder();
+
+  if (isVideoMedia(url, path)) {
+    const video = document.createElement("video");
+    video.src = url;
+    video.playsInline = true;
+    video.setAttribute("playsinline", "");
+    video.preload = "metadata";
+    video.muted = !controls;
+    if (controls) {
+      video.controls = true;
+    } else {
+      // Tiles: silent loop, but only once visible — autoplaying every card on
+      // first paint fights the product images for bandwidth.
+      video.loop = true;
+      video.setAttribute("muted", "");
+      video.dataset.autoplayWhenVisible = "1";
+    }
+    video.setAttribute("aria-label", alt || "Product video");
+    video.addEventListener("error", () => swapBrokenMedia(video), { once: true });
+    return video;
+  }
+  const img = document.createElement("img");
+  img.src = url;
+  img.alt = alt || "";
+  img.loading = "lazy";
+  img.addEventListener("error", () => swapBrokenMedia(img), { once: true });
+  return img;
+}
+
 /**
  * Format a price for display. Shared so the dashboard and the storefront can
  * never disagree — they previously differed on thousands separators
@@ -37,10 +170,12 @@ export function mediaPlaceholder(caption = "") {
 export function money(amount, currency) {
   if (amount == null || amount === "") return "";
   try {
-    return new Intl.NumberFormat(undefined, {
+    // No grouping separators — "PKR 4000", not "PKR 4,000" / locale variants.
+    return new Intl.NumberFormat("en", {
       style: "currency",
       currency: currency || "USD",
       maximumFractionDigits: 0,
+      useGrouping: false,
     }).format(Number(amount));
   } catch {
     // An owner can type any three letters into the currency field; an invalid
@@ -71,13 +206,48 @@ export function isInStock(product) {
 }
 
 /**
+ * Some items — the 1–2 lakh pieces — are quoted per order rather than sold at a
+ * shelf price, because the cost moves between the enquiry and the sale. Showing
+ * a number that is already stale is worse than showing none, so the owner can
+ * mark a product `quoteOnly` and the storefront asks the customer to message
+ * instead. Absent means false: every existing product keeps its price.
+ */
+export function isQuoteOnly(product) {
+  return product?.quoteOnly === true;
+}
+
+/** One wording for every surface — card, detail sheet, banner, dashboard. */
+export const QUOTE_LABEL = "DM for Quotation";
+
+/**
  * Build the price line: current price, the struck-through original, and a
  * discount pill. Shared so the card, the detail sheet and the dashboard can't
  * drift apart on how a sale is presented.
+ *
+ * `contactHref` turns the quote-only line into a live link. It is optional
+ * because the dashboard has nobody to message — there it stays plain text.
  */
-export function priceRow(product, currency, money) {
+export function priceRow(product, currency, money, { contactHref = "" } = {}) {
   const row = document.createElement("div");
   row.className = "price-row";
+
+  // Deliberately before anything else: a quoted product shows no price, no
+  // "was" and no discount pill, whatever those fields still hold. Owners flip
+  // this on for an item that already had a price, and a struck-through number
+  // left sitting next to "DM for Quotation" is exactly the confusion the
+  // feature exists to remove.
+  if (isQuoteOnly(product)) {
+    const quote = document.createElement(contactHref ? "a" : "span");
+    quote.className = "quote-link";
+    quote.textContent = QUOTE_LABEL;
+    if (contactHref) {
+      quote.href = contactHref;
+      quote.target = "_blank";
+      quote.rel = "noopener noreferrer";
+    }
+    row.appendChild(quote);
+    return row;
+  }
 
   const now = document.createElement("span");
   now.className = "price";
@@ -86,13 +256,18 @@ export function priceRow(product, currency, money) {
 
   const off = discountPercent(product.price, product.compareAtPrice);
   if (off > 0) {
+    // Keep "was + %" on one cluster so narrow 2-column cards wrap cleanly
+    // under the current price instead of scattering three loose pieces.
+    const deal = document.createElement("span");
+    deal.className = "deal";
     const was = document.createElement("s");
     was.className = "was";
     was.textContent = money(product.compareAtPrice, currency);
     const pill = document.createElement("span");
     pill.className = "off";
     pill.textContent = `−${off}%`;
-    row.append(was, pill);
+    deal.append(was, pill);
+    row.appendChild(deal);
   }
   return row;
 }

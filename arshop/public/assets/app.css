@@ -11,15 +11,16 @@
    ========================================================================== */
 
 :root {
-  --bg: #ffffff;
-  --bg-2: #f4f4f6;
+  /* Cool light retail — not flat pure white. Dark mode overrides below. */
+  --bg: #f3f4f8;
+  --bg-2: #e8eaf0;
   --panel: #ffffff;
-  --ink: #0c0c10;
-  --ink-soft: #6a6a78;
-  --rule: #e6e6ea;
-  --shadow-sm: 0 1px 2px rgb(12 12 16 / 0.05);
-  --shadow-md: 0 10px 30px rgb(12 12 16 / 0.10);
-  --shadow-lg: 0 20px 50px rgb(12 12 16 / 0.14);
+  --ink: #12121a;
+  --ink-soft: #5a5a6a;
+  --rule: #d4d6df;
+  --shadow-sm: 0 1px 2px rgb(16 18 28 / 0.06), 0 1px 3px rgb(16 18 28 / 0.04);
+  --shadow-md: 0 8px 24px rgb(16 18 28 / 0.10), 0 2px 6px rgb(16 18 28 / 0.05);
+  --shadow-lg: 0 18px 44px rgb(16 18 28 / 0.14), 0 4px 12px rgb(16 18 28 / 0.06);
 
   --accent: #5b5bd6;
   --accent-ink: #ffffff;
@@ -78,7 +79,8 @@
     scroll-behavior: auto !important;
   }
   .tile.clickable:hover { transform: none; }
-  .tile.clickable:hover .media img { transform: none; }
+  .tile.clickable:hover .media img,
+  .tile.clickable:hover .media video { transform: none; }
   .btn:hover:not(:disabled) { transform: none; }
 }
 
@@ -101,7 +103,9 @@
 
 body {
   margin: 0;
-  background: var(--bg-2);
+  background:
+    radial-gradient(120% 80% at 50% -10%, var(--accent-wash), transparent 55%),
+    var(--bg);
   color: var(--ink);
   font-family: var(--font);
   line-height: 1.55;
@@ -145,9 +149,10 @@ h1, h2, h3 { letter-spacing: -0.025em; line-height: 1.12; margin: 0; }
 .btn:focus-visible { outline: 3px solid var(--accent-ring); outline-offset: 2px; }
 
 .btn.ghost {
-  background: transparent;
+  background: var(--panel);
   color: var(--ink);
-  border-color: var(--rule);
+  border-color: color-mix(in srgb, var(--rule) 70%, var(--ink-soft));
+  box-shadow: var(--shadow-sm);
 }
 .btn.ghost:hover:not(:disabled) {
   background: var(--accent-wash);
@@ -177,9 +182,10 @@ h1, h2, h3 { letter-spacing: -0.025em; line-height: 1.12; margin: 0; }
   align-items: center;
   gap: 12px;
   padding: 11px 20px;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  background: color-mix(in srgb, var(--panel) 86%, transparent);
   backdrop-filter: saturate(1.6) blur(14px);
   border-bottom: 1px solid var(--rule);
+  box-shadow: 0 1px 0 rgb(16 18 28 / 0.03);
 }
 .shopbar .spacer { flex: 1; }
 .shopbar-logo {
@@ -234,33 +240,60 @@ h1, h2, h3 { letter-spacing: -0.025em; line-height: 1.12; margin: 0; }
      Bottom: theme-tinted, because the shop name below uses --ink and needs the
      page background behind it — heavy enough for a near-white uploaded photo. */
   background:
-    linear-gradient(to bottom, rgb(0 0 0 / 0.55) 0%, rgb(0 0 0 / 0) 120px),
+    linear-gradient(to bottom, rgb(0 0 0 / 0.58) 0%, rgb(0 0 0 / 0) 140px),
     linear-gradient(
       to bottom,
       transparent 0%,
-      color-mix(in srgb, var(--bg) 26%, transparent) 30%,
-      color-mix(in srgb, var(--bg) 76%, transparent) 68%,
-      color-mix(in srgb, var(--bg) 95%, transparent) 100%
+      color-mix(in srgb, var(--bg) 18%, transparent) 28%,
+      color-mix(in srgb, var(--bg) 72%, transparent) 62%,
+      color-mix(in srgb, var(--bg) 96%, transparent) 100%
     );
+}
+
+/* Light mode: a pure white fade over the cover looks milky/washed. Prefer a
+   deeper neutral fade so the photo keeps colour and the title stays sharp. */
+@media (prefers-color-scheme: light) {
+  .hero .cover::after {
+    background:
+      linear-gradient(to bottom, rgb(0 0 0 / 0.58) 0%, rgb(0 0 0 / 0) 140px),
+      linear-gradient(
+        to bottom,
+        transparent 8%,
+        rgb(243 244 248 / 0.35) 40%,
+        rgb(243 244 248 / 0.88) 72%,
+        rgb(243 244 248 / 0.98) 100%
+      );
+  }
+  .hero.has-cover h1,
+  .hero.has-cover .hero-tagline,
+  .hero.has-cover .hero-about {
+    text-shadow:
+      0 1px 1px rgb(255 255 255 / 0.65),
+      0 2px 16px rgb(243 244 248 / 0.9);
+  }
 }
 .hero.has-cover { padding-top: 104px; padding-bottom: 58px; }
 
-/* With a cover, the bar floats over the image instead of sitting above it as a
-   separate opaque strip — that strip read as a black band bolted to the top of
-   the photo. It stays invisible until the page scrolls, then fades in a solid
-   background so the shop name never sits on raw product imagery. */
+/* Cover mode: keep sticky (not fixed). Fixed pulled the bar out of flow and
+   product cards scrolled underneath it — on phones you saw orphaned
+   "See details" buttons with the images clipped by the header. Sticky + a
+   pulled-up hero still lets the bar sit over the cover photo at the top. */
 body.cover-mode .shopbar {
-  position: fixed;
-  top: 0; left: 0; right: 0;
+  position: sticky;
   background: transparent;
   border-bottom-color: transparent;
+  box-shadow: none;
   backdrop-filter: none;
   transition: background 0.25s ease, border-color 0.25s ease;
 }
+body.cover-mode .hero.has-cover {
+  margin-top: -56px;
+}
 body.cover-mode.scrolled .shopbar {
-  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
   border-bottom-color: var(--rule);
   backdrop-filter: saturate(1.6) blur(14px);
+  box-shadow: 0 1px 0 rgb(16 18 28 / 0.04);
 }
 /* Text sits directly on the photo here, so it needs its own separation
    rather than relying on the bar's background. */
@@ -375,6 +408,8 @@ body.cover-mode:not(.scrolled) .shopbar-logo {
   padding-right: 40px;
   border-radius: 999px;
   background: var(--panel);
+  border-color: color-mix(in srgb, var(--rule) 75%, var(--ink-soft));
+  box-shadow: var(--shadow-sm);
   -webkit-appearance: none;
   appearance: none;
 }
@@ -426,12 +461,13 @@ body.cover-mode:not(.scrolled) .shopbar-logo {
   font: inherit;
   font-size: 0.86rem;
   font-weight: 620;
-  color: var(--ink-soft);
+  color: var(--ink);
   background: var(--panel);
-  border: 1.5px solid var(--rule);
+  border: 1.5px solid color-mix(in srgb, var(--rule) 70%, var(--ink-soft));
   border-radius: 999px;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: var(--shadow-sm);
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .chip:hover { color: var(--ink); border-color: var(--accent-edge); }
@@ -452,17 +488,123 @@ body.cover-mode:not(.scrolled) .shopbar-logo {
   margin-top: 22px;
 }
 
+/* ----------------------------------------------- product of the week */
+
+/* One promoted product above the shelf. Two columns on desktop, stacked on a
+   phone; the media keeps a fixed aspect ratio in both so a portrait photo can't
+   push the copy off the screen. */
+.featured {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: clamp(18px, 3vw, 34px);
+  align-items: center;
+  margin: 4px 0 34px;
+  padding: clamp(16px, 2.4vw, 26px);
+  border-radius: calc(var(--radius) + 6px);
+  border: 1px solid var(--accent-edge);
+  /* Accent wash rather than a flat panel: this has to read as the one
+     promoted slot on the page, without a second brand colour to maintain. */
+  background:
+    radial-gradient(120% 140% at 100% 0%, var(--accent-wash-2), transparent 62%),
+    var(--panel);
+  box-shadow: var(--shadow-md);
+}
+
+.featured-media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-2);
+  cursor: pointer;
+}
+.featured-media img,
+.featured-media video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.featured-media:hover img,
+.featured-media:hover video { transform: scale(1.04); }
+
+.featured-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.featured-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.featured-name {
+  font-size: clamp(1.45rem, 3.4vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+/* Same row component as the cards, sized up for the banner. */
+.featured-price.price-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+.featured-price .price { font-size: clamp(1.4rem, 3vw, 1.85rem); }
+.featured-price .was { font-size: 0.98rem; }
+.featured-price .off { font-size: 0.78rem; padding: 4px 10px; }
+.featured-price .quote-link { font-size: 1.05rem; }
+
+.featured-desc {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.featured-sold {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: var(--danger);
+}
+.featured-cta { margin-top: 4px; }
+
+@media (max-width: 760px) {
+  .featured {
+    grid-template-columns: 1fr;
+    margin-bottom: 26px;
+  }
+  .featured-media { aspect-ratio: 16 / 10; }
+}
+
 /* ------------------------------------------------------------------ cards */
 
 .tile {
   position: relative;
   background: var(--panel);
-  border: 1px solid var(--rule);
+  border: 1px solid color-mix(in srgb, var(--rule) 80%, var(--ink-soft));
   border-radius: var(--radius);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 .tile.clickable { cursor: pointer; }
@@ -482,13 +624,16 @@ body.cover-mode:not(.scrolled) .shopbar-logo {
   overflow: hidden;
   width: 100%;
 }
-.tile .media img {
+.tile .media img,
+.tile .media video {
   width: 100%; height: 100%;
   object-fit: cover;
   display: block;
   transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-.tile.clickable:hover .media img { transform: scale(1.06); }
+.tile .media video { pointer-events: none; }
+.tile.clickable:hover .media img,
+.tile.clickable:hover .media video { transform: scale(1.06); }
 .tile model-viewer { width: 100%; height: 100%; --poster-color: transparent; }
 
 .tile .body {
@@ -502,6 +647,7 @@ body.cover-mode:not(.scrolled) .shopbar-logo {
   font-weight: 700;
   font-size: 1.02rem;
   letter-spacing: -0.015em;
+  color: var(--ink);
 }
 .tile .price {
   font-weight: 780;
@@ -514,28 +660,69 @@ body.cover-mode:not(.scrolled) .shopbar-logo {
 
 .price-row {
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.price-row .price {
+  font-weight: 780;
+  font-size: 1.12rem;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.price-row .deal {
+  display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 .price-row .was {
-  color: var(--ink-soft);
-  font-size: 0.92rem;
-  font-weight: 500;
+  color: color-mix(in srgb, var(--ink-soft) 70%, var(--ink));
+  font-size: 0.84rem;
+  font-weight: 550;
   text-decoration-thickness: 1.5px;
 }
 .price-row .off {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.03em;
   padding: 3px 8px;
   border-radius: 999px;
-  /* Deliberately not the brand accent: a discount has to read as a discount
-     even when the shop's accent is already used for the AR badge and buttons. */
-  background: color-mix(in srgb, var(--sale) 16%, transparent);
+  /* Solid enough to stay readable on dark cards — a 16% tint vanished. */
+  background: color-mix(in srgb, var(--sale) 22%, var(--panel));
   color: var(--sale);
   white-space: nowrap;
 }
+/* "DM for Quotation" replaces the price on items quoted per order. Weighted
+   like a price, not a button, so a shelf of cards stays scannable — but it is
+   a link, so it gets an underline on hover to say so. */
+.quote-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 750;
+  font-size: 0.98rem;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: var(--accent-deep);
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--accent-wash);
+  border: 1px solid var(--accent-edge);
+  text-decoration: none;
+}
+a.quote-link:hover { background: var(--accent-wash-2); text-decoration: none; }
+a.quote-link:focus-visible { outline: 3px solid var(--accent-ring); outline-offset: 2px; }
+
+.detail-price.price-row,
+.detail-price {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 10px;
+}
+.detail-price .price { font-size: 1.5rem; }
 
 .badge.sold {
   left: auto;
@@ -547,6 +734,7 @@ body.cover-mode:not(.scrolled) .shopbar-logo {
 /* Dim the image only — the name and price stay fully legible, because a
    customer still needs to read what it is and decide to ask about it. */
 .tile.sold-out .media img,
+.tile.sold-out .media video,
 .tile.sold-out .media model-viewer,
 .tile.sold-out .media .ph { opacity: 0.42; }
 .tile.sold-out .media { background: var(--bg-2); }
@@ -579,6 +767,9 @@ body.cover-mode:not(.scrolled) .shopbar-logo {
   box-shadow: var(--shadow-sm);
 }
 .badge.draft { background: var(--ink-soft); color: var(--bg); }
+/* Bottom-left, so it can sit alongside the "Hidden" / "3D · AR" badge that
+   already owns the top-left corner of a dashboard card. */
+.badge.featured-flag { top: auto; bottom: 12px; }
 
 /* model-viewer slots this in and hides it where AR is unsupported, so it never
    advertises a button that cannot work. */
@@ -680,8 +871,8 @@ textarea, select {
   font: inherit;
   font-size: 0.95rem;
   color: var(--ink);
-  background: var(--bg);
-  border: 1.5px solid var(--rule);
+  background: var(--panel);
+  border: 1.5px solid color-mix(in srgb, var(--rule) 70%, var(--ink-soft));
   border-radius: var(--radius-sm);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -702,6 +893,13 @@ input[type="color"] {
   width: 100%;
 }
 input[type="checkbox"] { width: auto; accent-color: var(--accent); }
+/* The product editor disables the price fields while "DM for Quotation" is on;
+   without this they look editable and typing into them appears to do nothing. */
+input:disabled, textarea:disabled, select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--bg-2);
+}
 
 .row { display: flex; gap: 14px; flex-wrap: wrap; }
 .row > * { flex: 1; min-width: 168px; }
@@ -723,10 +921,10 @@ input[type="checkbox"] { width: auto; accent-color: var(--accent); }
 
 .card {
   background: var(--panel);
-  border: 1px solid var(--rule);
+  border: 1px solid color-mix(in srgb, var(--rule) 75%, var(--ink-soft));
   border-radius: var(--radius);
   padding: 24px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
 }
 
 /* -------------------------------------------------------------- dashboard */
@@ -869,7 +1067,9 @@ h2.admin-h { font-size: 1.2rem; font-weight: 760; margin: 38px 0 14px; }
   overflow: hidden;
   border: 1.5px solid var(--rule);
 }
-.thumbs .t img { width: 100%; height: 100%; object-fit: cover; }
+.thumbs .t img,
+.thumbs .t video { width: 100%; height: 100%; object-fit: cover; }
+.thumbs .t video { pointer-events: none; }
 .thumbs .t button {
   position: absolute;
   top: 3px; right: 3px;
@@ -886,7 +1086,7 @@ h2.admin-h { font-size: 1.2rem; font-weight: 760; margin: 38px 0 14px; }
 /* ----------------------------------------------------------------- dialog */
 
 dialog {
-  border: none;
+  border: 1px solid color-mix(in srgb, var(--rule) 80%, var(--ink-soft));
   border-radius: 22px;
   background: var(--panel);
   color: var(--ink);
@@ -894,7 +1094,7 @@ dialog {
   width: min(600px, calc(100vw - 28px));
   box-shadow: var(--shadow-lg);
 }
-dialog::backdrop { background: rgb(8 8 12 / 0.62); backdrop-filter: blur(3px); }
+dialog::backdrop { background: rgb(12 14 22 / 0.48); backdrop-filter: blur(5px); }
 dialog .dlg-body { padding: 26px; max-height: 78vh; overflow-y: auto; }
 dialog .dlg-foot {
   display: flex;
@@ -902,6 +1102,7 @@ dialog .dlg-foot {
   justify-content: flex-end;
   padding: 16px 26px;
   border-top: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--bg) 55%, var(--panel));
   flex-wrap: wrap;
 }
 dialog h1 { font-size: 1.5rem; font-weight: 780; }
@@ -917,20 +1118,27 @@ dialog h1 { font-size: 1.5rem; font-weight: 780; }
   height: min(46vh, 380px);
   border-radius: var(--radius);
   overflow: hidden;
-  background: var(--bg-2);
+  background:
+    linear-gradient(180deg, var(--bg-2), color-mix(in srgb, var(--bg-2) 70%, var(--panel)));
+  border: 1px solid var(--rule);
 }
-.detail-media img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.detail-media img,
+.detail-media video { width: 100%; height: 100%; object-fit: contain; display: block; background: #111218; }
+.detail-media img { background: transparent; }
 .detail-media model-viewer { width: 100%; height: 100%; --poster-color: transparent; }
+.carousel-frame video { width: 100%; height: 100%; object-fit: contain; display: block; background: #111218; }
 .detail-price { margin-top: 8px; }
-.detail-price .price { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.025em; }
 .detail-price .was { font-size: 1.05rem; }
 
 /* Preserve admin line breaks; product copy often has bullets + a short blurb. */
 .detail-desc {
-  margin-top: 10px;
+  margin-top: 12px;
   white-space: pre-wrap;
-  line-height: 1.55;
+  line-height: 1.6;
   word-break: break-word;
+  /* `.muted` is too faint for long product copy on white panels. */
+  color: color-mix(in srgb, var(--ink) 86%, var(--ink-soft));
+  font-size: 0.95rem;
 }
 
 /* Detail-only photo carousel — grid tiles still show the cover image. */
@@ -1106,8 +1314,10 @@ dialog h1 { font-size: 1.5rem; font-weight: 780; }
 @media (max-width: 760px) {
   /* Full-height sheet rather than a floating box: the product editor is a long
      form with file pickers, and a centred dialog on a phone leaves it scrolling
-     inside a scrolling page with the action buttons stranded off-screen. */
-  dialog {
+     inside a scrolling page with the action buttons stranded off-screen.
+     Must target [open] — bare `dialog { display:flex }` overrides the UA
+     closed-state `display:none` and can blank or break the sheet on mobile. */
+  dialog[open] {
     width: 100vw;
     max-width: 100vw;
     height: 100dvh;
@@ -1117,7 +1327,7 @@ dialog h1 { font-size: 1.5rem; font-weight: 780; }
     display: flex;
     flex-direction: column;
   }
-  dialog .dlg-body {
+  dialog[open] .dlg-body {
     flex: 1;
     max-height: none;
     padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
@@ -1137,13 +1347,32 @@ dialog h1 { font-size: 1.5rem; font-weight: 780; }
 }
 
 @media (max-width: 560px) {
-  .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
-  .tile .body { padding: 12px 13px 15px; }
-  .tile .price { font-size: 1.05rem; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .tile .body { padding: 11px 11px 13px; gap: 4px; }
+  .tile .name {
+    font-size: 0.9rem;
+    line-height: 1.25;
+    /* Two lines max — long titles were shoving the price off-pattern. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .price-row .price { font-size: 0.98rem; }
+  .price-row .was { font-size: 0.75rem; }
+  .price-row .off { font-size: 0.65rem; padding: 2px 6px; }
+  /* Two-up cards leave ~140px of body width; at the desktop size the label
+     wrapped inside its own pill. */
+  .tile .quote-link { font-size: 0.8rem; padding: 4px 9px; }
+  /* Bullet soup from long descriptions is unreadable at 2-up. Full text is
+     in the detail sheet. */
+  .tile .desc { display: none; }
+  .tile .cta { width: 100%; margin-top: 8px; font-size: 0.8rem; padding: 8px 10px; }
   /* Tighter than desktop, not looser: phones are where customers actually
      browse, and vertical space is scarcer there. */
   .hero { padding: 26px 18px 24px; }
   .hero-logo { width: 54px; height: 54px; border-radius: 15px; margin-bottom: 11px; }
   .wrap { padding: 22px 16px 90px; }
   .wrap.narrow { padding-top: 6vh; }
+  .detail-media { height: min(40vh, 320px); }
 }

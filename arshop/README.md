@@ -8,7 +8,8 @@ public site updates live.
 - `/admin` — owner dashboard (sign in, product CRUD, shop settings)
 - `/s/<slug>` — a customer-facing storefront
 
-No build step, no npm install. Plain ES modules, Firebase from CDN.
+Admin stays plain ES modules. The public storefront is bundled (`npm run build`)
+so shoppers download one hashed JS file instead of the full Firebase CDN graph.
 
 ---
 
@@ -39,11 +40,14 @@ slugs/{slug}                     → { shopId, claimedAt }        public read
 domains/{hostname}               → { shopId, claimedAt }        public read
 shops/{shopId}                   → name, tagline, currency,     public read
                                    whatsapp, accent, logoUrl,
-                                   published, ownerUid
+                                   published, ownerUid,
+                                   featuredProductId
 shops/{shopId}/products/{id}     → name, description, price,    public read
                                    compareAtPrice, inStock,
+                                   quoteOnly,
                                    category, widthCm,
-                                   photoUrls[], photoPaths[],
+                                   photoUrls[], photoPaths[],  (images + mp4/webm/mov)
+
                                    modelGlbUrl/Path, modelAuto,
                                    modelUsdzUrl/Path,
                                    published, sortOrder
@@ -114,6 +118,43 @@ on the storefront" instead.
 The discount pill uses its own `--sale` colour rather than the shop accent: the
 accent is already carrying AR badges and buttons, and a discount has to read as
 a discount whatever colour the owner picked.
+
+### Product of the week
+
+The storefront carries one promoted product in a banner above the shelf: photo,
+badge, name, price with the struck-through original and the `−N%` pill, and a
+"Shop now" button that opens the usual detail sheet.
+
+Which product it is lives in **one field on the shop document**,
+`featuredProductId`, set from a dropdown in Settings. Nothing about the banner is
+per-product, so changing the Product of the Week is picking a different name in a
+list — the homepage layout is never touched. An id that no longer resolves (the
+product was deleted, or hidden from the storefront) hides the section instead of
+rendering a broken banner, and the dropdown offers only visible products for the
+same reason. A product that was featured and has since been hidden still appears
+in the dropdown, marked, so the owner can see why their banner disappeared.
+
+The banner also hides itself while a search or category filter is active: someone
+looking for something specific does not want a promo for something else on top of
+their results. It returns when they clear the filter.
+
+### DM for Quotation
+
+Some pieces are quoted per order — the cost moves between the enquiry and the
+sale, and a stale number is worse than no number. Ticking **"Hide the price —
+show 'DM for Quotation'"** on a product sets `quoteOnly`, and every surface that
+would show its price (card, detail sheet, featured banner) shows a "DM for
+Quotation" link to the shop's WhatsApp instead, pre-filled asking for a
+quotation. The detail sheet's order button changes wording to match.
+
+This is per product: everything without the flag keeps showing its price
+normally, and `quoteOnly` is absent-means-false, so existing products are
+untouched. The check lives at the top of `priceRow()` in `ui.js`, before the
+price and discount are built, so a leftover `price`/`compareAtPrice` can never
+leak out beside the quotation link — owners do turn this on for an item that
+already had a price, and the values are deliberately kept (not cleared) so
+unticking the box restores exactly what was there before. With no WhatsApp
+number set the label renders as plain text rather than a dead link.
 
 ### Categories and paging
 
@@ -231,7 +272,8 @@ localhost included, and you're talking to your live project again.
 
 ### 7. Deploy
 
-Live at **<https://monetra-web-psi.vercel.app>** (Vercel project `monetra-web`).
+Live at **<https://monetra-web-psi.vercel.app>** and custom domains such as
+**therango.co** (Vercel project `ar_shop`).
 
 From inside `arshop/`:
 
@@ -248,18 +290,21 @@ working directory, so running it from `public/` or `public/assets/` silently
 creates a *new* project named after that folder, deploys the wrong subtree, and
 leaves a stray `.vercel/` link that makes the next deploy wrong too. This
 happened twice. `deploy.sh` cd's to its own directory, refuses to run if the
-link has drifted from `monetra-web`, clears stray links, and smoke-tests the
+link has drifted from `ar_shop`, clears stray links, and smoke-tests the
 routes afterwards.
 
-`arshop/.vercel/project.json` pins this to the `monetra-web` project. Two things
+`arshop/.vercel/project.json` pins this to the `ar_shop` project. Two things
 that already went wrong once and are worth not repeating:
 
-> **Never let `vercel link` attach this folder to `monetra-site`.** That is
-> Monetra's live support site, and its `/privacy` page is the privacy-policy URL
-> on the App Store listing. Deploying `arshop` into that project replaces the
-> whole site and 404s the policy. If the interactive prompt ever asks which
-> project to use, the answer is `monetra-web` — or delete `.vercel/` and re-link
-> with `npx vercel link --project monetra-web`.
+> **Never let `vercel link` attach this folder to a different project** (for
+> example an old Monetra marketing site). Deploying `arshop` into the wrong
+> project replaces that site. If the interactive prompt ever asks which project
+> to use, the answer is `ar_shop` — or delete `.vercel/` and re-link with
+> `npx vercel link --project ar_shop`.
+>
+> **GitHub auto-deploy:** this repo root is `website/`, so in Vercel → Project
+> Settings → General set **Root Directory** to `arshop`. Otherwise a push
+> deploys the wrong folder.
 
 > **Rewrite destinations must be extension-less.** `cleanUrls: true` turns
 > `/shop.html` into a 308 redirect to `/shop`, and a rewrite pointing at a

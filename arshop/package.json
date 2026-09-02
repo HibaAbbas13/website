@@ -1,0 +1,14 @@
+{
+  "name": "arshop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "firebase": "^12.17.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.9"
+  }
+}

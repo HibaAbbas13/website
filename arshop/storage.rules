@@ -20,6 +20,14 @@ service firebase.storage {
       return request.resource.contentType.matches('image/.*');
     }
 
+    // Product demos: mp4/webm/mov. Keep the list tight — arbitrary video/*
+    // would let owners upload formats the storefront cannot play.
+    function isProductVideo() {
+      return request.resource.contentType == 'video/mp4'
+             || request.resource.contentType == 'video/webm'
+             || request.resource.contentType == 'video/quicktime';
+    }
+
     // .usdz and .glb are frequently handed to the browser with no type at all,
     // so octet-stream has to be tolerated here. The upload code sets an explicit
     // contentType; this is the safety net for when it doesn't stick.
@@ -36,11 +44,15 @@ service firebase.storage {
       allow delete: if owns(shopId);
     }
 
+    // Still photos and short product videos share this folder so existing
+    // photoUrls/photoPaths keep working. Images stay under 8MB; videos 50MB.
     match /shops/{shopId}/products/{productId}/photos/{file} {
       allow read: if true;
       allow create, update: if owns(shopId)
-                            && isImage()
-                            && request.resource.size < 8 * 1024 * 1024;
+                            && (
+                              (isImage() && request.resource.size < 8 * 1024 * 1024)
+                              || (isProductVideo() && request.resource.size < 50 * 1024 * 1024)
+                            );
       allow delete: if owns(shopId);
     }
 
@@ -50,6 +62,27 @@ service firebase.storage {
                             && isModel()
                             && request.resource.size < 50 * 1024 * 1024;
       allow delete: if owns(shopId);
+    }
+
+    // Husn-e-Tarteeb product photos. Single-owner site, so write access is
+    // one account rather than a per-shop uid — see firestore.rules for why
+    // this matches on email. Images only, and smaller than the arshop limit
+    // because these are catalogue stills, never scans or video.
+    function isHusnAdmin() {
+      return request.auth != null
+             && request.auth.token.email == 'hibaabbas1306@gmail.com';
+    }
+
+    // Photos are resized in the browser before upload so 8MB is generous;
+    // videos are short product clips shot on a phone, hence the wider ceiling.
+    match /husnetarteeb/products/{productId}/{file} {
+      allow read: if true;
+      allow create, update: if isHusnAdmin()
+                            && (
+                              (isImage() && request.resource.size < 8 * 1024 * 1024)
+                              || (isProductVideo() && request.resource.size < 50 * 1024 * 1024)
+                            );
+      allow delete: if isHusnAdmin();
     }
 
     match /{allPaths=**} {

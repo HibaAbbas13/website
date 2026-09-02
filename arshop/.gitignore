@@ -14,3 +14,9 @@ firebase-export-*/
 test/node_modules/
 test/package-lock.json
 test/package.json
+
+# Storefront build
+node_modules/
+public/assets/b/
+public/assets/shop.bundle.*.js
+public/assets/shop.bundle.*.js.map

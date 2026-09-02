@@ -22,6 +22,9 @@ Fill web credentials in `arshop/public/assets/firebase-config.js`.
 ## Deploy
 
 ```bash
-./arshop/deploy.sh          # AR storefront → monetra-web (Vercel)
-# monetra-site: deploy from monetra-site/ (Vercel project monetra-site)
+./arshop/deploy.sh          # AR storefront → Vercel project ar_shop
+# Optional: PROD_HOST=https://therango.co ./arshop/deploy.sh
 ```
+
+Vercel project: **ar_shop** (`prj_0AcYgiwKNFKwBxoGQgHLJRtgABAc`).  
+If this GitHub repo is connected for auto-deploy, set **Root Directory** to `arshop` in the Vercel project settings.
