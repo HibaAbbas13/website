@@ -22,16 +22,13 @@
        known after JS runs — so the browser can't discover these hosts on its
        own. Warming the connections here removes a DNS + TLS round trip from the
        critical path for each of them. -->
-  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
   <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin />
 
   <link rel="stylesheet" href="/assets/app.css" />
-  <!-- model-viewer is NOT loaded here. It is ~300KB and most shops have no 3D
-       models at all, so shop.js fetches it on demand the first time a product
-       actually needs one. Elements created beforehand upgrade automatically
-       once the definition arrives. -->
-  <script type="module" src="/assets/shop.js"></script>
+  <!-- Build rewrites these to /assets/b/shop.*.js (Firebase inlined). -->
+  <link rel="modulepreload" href="/assets/b/shop.IG5AU54K.js" />
+  <script type="module" src="/assets/b/shop.IG5AU54K.js"></script>
 </head>
 <body>
 
@@ -54,6 +51,11 @@
   </header>
 
   <main class="wrap">
+    <!-- Product of the Week. Contents are built by shop.js from the product the
+         owner picked in the dashboard, and the section stays hidden when none
+         is set. -->
+    <section class="featured" id="featured" aria-labelledby="featuredTitle" hidden></section>
+
     <div class="section-head">
       <h2 id="shelfTitle" hidden>Products</h2>
       <span class="count" id="count" aria-live="polite"></span>

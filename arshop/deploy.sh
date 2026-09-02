@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploy the storefront to the `monetra-web` Vercel project.
+# Deploy the storefront to the `ar_shop` Vercel project.
 #
 # Always use this rather than calling `vercel` directly. Vercel infers the
 # project from the *current working directory*: running it from `public/` or
@@ -14,13 +14,18 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-EXPECTED_PROJECT="monetra-web"
+EXPECTED_PROJECT="ar_shop"
+EXPECTED_PROJECT_ID="prj_0AcYgiwKNFKwBxoGQgHLJRtgABAc"
 LINK=".vercel/project.json"
+# Production aliases (project was previously named monetra-web).
+PROD_HOST="${PROD_HOST:-https://therango.co}"
 
 if [[ -f "$LINK" ]]; then
   actual=$(python3 -c "import json;print(json.load(open('$LINK'))['projectName'])")
-  if [[ "$actual" != "$EXPECTED_PROJECT" ]]; then
-    echo "Refusing to deploy: $LINK points at '$actual', expected '$EXPECTED_PROJECT'." >&2
+  actual_id=$(python3 -c "import json;print(json.load(open('$LINK'))['projectId'])")
+  if [[ "$actual" != "$EXPECTED_PROJECT" || "$actual_id" != "$EXPECTED_PROJECT_ID" ]]; then
+    echo "Refusing to deploy: $LINK points at '$actual' ($actual_id)," >&2
+    echo "expected '$EXPECTED_PROJECT' ($EXPECTED_PROJECT_ID)." >&2
     echo "Fix with: rm -rf .vercel && npx vercel link --project $EXPECTED_PROJECT" >&2
     exit 1
   fi
@@ -34,12 +39,16 @@ for stray in public/.vercel public/assets/.vercel; do
   [[ -e "$stray" ]] && { echo "Removing stray link: $stray"; rm -rf "$stray"; }
 done
 
+echo "Building storefront bundle…"
+npm install --no-fund --no-audit
+npm run build
+
 echo "Deploying $(pwd) → $EXPECTED_PROJECT"
 npx vercel --prod --yes
 
 echo
-echo "Smoke test:"
+echo "Smoke test ($PROD_HOST):"
 for path in / /admin /s/toy; do
-  code=$(curl -s -o /dev/null -w '%{http_code}' "https://monetra-web-psi.vercel.app${path}")
+  code=$(curl -s -o /dev/null -w '%{http_code}' "${PROD_HOST}${path}")
   printf "  %-10s %s\n" "$path" "$code"
 done

@@ -166,6 +166,17 @@
                style="width:100%;max-height:130px;object-fit:cover;border-radius:10px;border:1px solid var(--rule)" />
           <button class="btn ghost small" id="removeCover" type="button" style="margin-top:8px">Remove cover</button>
         </div>
+        <label for="sFeatured">Product of the week</label>
+        <select id="sFeatured">
+          <option value="">None — hide the banner</option>
+        </select>
+        <div class="hint">
+          Shows this product in a banner at the top of your storefront, with its
+          price, discount and a “Shop now” button. Pick a different one any time
+          — nothing else on the page changes. Only visible products can be
+          featured.
+        </div>
+
         <label class="check" for="sPublished">
           <input id="sPublished" type="checkbox" />
           <span>Shop is open to the public</span>
@@ -244,6 +255,16 @@
         button to stand it in their room at true size. Leave blank — or clear it
         — for anything that isn't a real object, and the AR button is removed.
       </div>
+      <label class="check" for="pQuoteOnly">
+        <input id="pQuoteOnly" type="checkbox" />
+        <span>Hide the price — show “DM for Quotation”</span>
+      </label>
+      <div class="hint">
+        For items whose price moves between the enquiry and the sale. The
+        storefront shows a “DM for Quotation” link that opens WhatsApp instead
+        of a price, and the discount is hidden. Everything else about the
+        product is unchanged.
+      </div>
 
       <label for="pCategory">Category</label>
       <input id="pCategory" type="text" list="categoryList" placeholder="e.g. Storage" autocomplete="off" />
@@ -253,8 +274,9 @@
       <label for="pDesc">Description</label>
       <textarea id="pDesc"></textarea>
 
-      <label for="pPhotos">Photos</label>
-      <input id="pPhotos" type="file" accept="image/*" multiple />
+      <label for="pPhotos">Photos &amp; videos</label>
+      <input id="pPhotos" type="file" accept="image/*,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" multiple />
+      <div class="hint">Images up to 8&nbsp;MB (auto-resized). Videos: MP4, WebM, or MOV up to 50&nbsp;MB.</div>
       <div class="bar" id="photoBar" hidden><i></i></div>
       <div class="thumbs" id="pThumbs"></div>
 

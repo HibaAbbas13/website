@@ -9,7 +9,10 @@
 // Nothing here writes, so there is no shared state to keep in sync with db.js;
 // the two are never loaded on the same page.
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+// Bare package imports — esbuild inlines these into shop.bundle.[hash].js for
+// production. Local `npm run build` (or Vercel's buildCommand) is required
+// before the storefront script in shop.html will resolve.
+import { initializeApp } from "firebase/app";
 import {
   getFirestore,
   connectFirestoreEmulator,
@@ -19,7 +22,7 @@ import {
   query,
   where,
   onSnapshot,
-} from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+} from "firebase/firestore";
 
 import { firebaseConfig, isConfigured } from "./firebase-config.js";
 

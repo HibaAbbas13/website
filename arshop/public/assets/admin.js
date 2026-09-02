@@ -27,10 +27,19 @@ import {
 } from "./db.js";
 import {
   mediaPlaceholder,
+  mediaElement,
+  mediaKindFromFile,
+  videoContentType,
+  videoExtension,
+  coverMedia,
+  isVideoMedia,
+  MAX_VIDEO_BYTES,
   applyAccent,
   money,
   priceRow,
   isInStock,
+  isQuoteOnly,
+  QUOTE_LABEL,
 } from "./ui.js";
 import { photoToStandeeGlb } from "./glb.js";
 
@@ -265,6 +274,9 @@ async function enterAdmin(uid) {
     if (s.logoUrl) $("navLogo").src = s.logoUrl;
     applyAccent(s.accent);
     fillSettings(s);
+    // The cards carry the "Product of the week" flag, so they have to repaint
+    // when that choice changes — the product documents themselves did not.
+    renderProducts();
   });
 
   unsubProducts?.();
@@ -273,6 +285,7 @@ async function enterAdmin(uid) {
     (list) => {
       products = list;
       renderProducts();
+      renderFeaturedOptions();
     },
     (e) => {
       console.error(e);
@@ -425,13 +438,11 @@ function productCard(p) {
 
   const media = document.createElement("div");
   media.className = "media";
-  const photo = (p.photoUrls || [])[0];
-  if (photo) {
-    const img = document.createElement("img");
-    img.src = photo;
-    img.alt = "";
-    img.loading = "lazy";
-    media.appendChild(img);
+  const cover = coverMedia(p);
+  if (cover) {
+    media.appendChild(
+      mediaElement(cover.url, { path: cover.path, alt: "", controls: false })
+    );
   } else {
     // The dashboard names the gap explicitly — this is the screen where the
     // owner can actually do something about it.
@@ -449,6 +460,15 @@ function productCard(p) {
     // Match the storefront: a generated flat standee is "AR", not "3D".
     badge.textContent = p.modelAuto ? "AR" : "3D · AR";
     media.appendChild(badge);
+  }
+
+  // Mirrors the storefront banner, so "which one is the Product of the Week"
+  // is answerable from the product list without opening Settings.
+  if (shop?.featuredProductId && p.id === shop.featuredProductId) {
+    const star = document.createElement("span");
+    star.className = "badge featured-flag";
+    star.textContent = "Product of the week";
+    media.appendChild(star);
   }
 
   if (!isInStock(p)) {
@@ -509,6 +529,47 @@ window.addEventListener("beforeunload", (e) => {
   e.returnValue = "";
 });
 
+/**
+ * Rebuild the "Product of the week" dropdown from the live product list.
+ *
+ * Called from both the product listener and fillSettings, because either can
+ * arrive first. The current selection is preserved across rebuilds — the list
+ * re-renders on every product edit, and dropping the choice mid-edit would
+ * silently unfeature the product when the owner saved.
+ *
+ * Hidden products are excluded: featuring one would point the banner at
+ * something the storefront never renders, and the customer would land on a
+ * "product not found" gap. A previously featured product that has since been
+ * hidden still gets an option, marked, so the owner can see why their banner
+ * disappeared instead of finding an empty dropdown.
+ */
+function renderFeaturedOptions() {
+  const select = $("sFeatured");
+  const chosen = select.value || shop?.featuredProductId || "";
+
+  const options = [["", "None — hide the banner"]];
+  for (const p of products) {
+    if (p.published === false && p.id !== chosen) continue;
+    const label = p.name || "Untitled";
+    options.push([p.id, p.published === false ? `${label} (hidden)` : label]);
+  }
+  // A stale id — the product was deleted — must not silently become "None"
+  // the next time settings are saved without the owner meaning it.
+  if (chosen && !options.some(([value]) => value === chosen)) {
+    options.push([chosen, "Previously featured product (deleted)"]);
+  }
+
+  select.replaceChildren(
+    ...options.map(([value, label]) => {
+      const o = document.createElement("option");
+      o.value = value;
+      o.textContent = label;
+      return o;
+    })
+  );
+  select.value = chosen;
+}
+
 function fillSettings(s) {
   // Never overwrite pending edits.
   if (settingsDirty) return;
@@ -523,6 +584,10 @@ function fillSettings(s) {
   $("sEmail").value = s.email || "";
   $("sAccent").value = s.accent || "#5b5bd6";
   $("sPublished").checked = s.published !== false;
+  // Cleared first so renderFeaturedOptions takes the stored id rather than
+  // preserving whatever was selected before this fill.
+  $("sFeatured").value = "";
+  renderFeaturedOptions();
   $("coverPreviewWrap").hidden = !s.coverUrl;
   if (s.coverUrl) $("coverPreview").src = s.coverUrl;
   $("sDomain").value = s.customDomain || "";
@@ -554,6 +619,9 @@ $("saveSettings").addEventListener("click", async () => {
       email: $("sEmail").value.trim(),
       accent: $("sAccent").value,
       published: $("sPublished").checked,
+      // Just an id on the shop doc — the storefront looks it up in the product
+      // list it already has, so changing the weekly feature is one write.
+      featuredProductId: $("sFeatured").value,
     };
 
     const logoFile = $("sLogo").files[0];
@@ -780,6 +848,17 @@ function renderPriceHint() {
   const was = Number($("pCompareAt").value);
   const hint = $("priceHint");
 
+  // The values are kept, not cleared, so unticking the box restores the price
+  // the owner had — but while it is ticked neither number reaches the
+  // storefront, and the fields say so instead of inviting edits that do nothing.
+  const quoteOnly = $("pQuoteOnly").checked;
+  $("pPrice").disabled = quoteOnly;
+  $("pCompareAt").disabled = quoteOnly;
+  if (quoteOnly) {
+    hint.textContent = `Shows “${QUOTE_LABEL}” instead of a price.`;
+    return;
+  }
+
   if (!$("pCompareAt").value) {
     hint.textContent = "";
     return;
@@ -799,6 +878,7 @@ function renderPriceHint() {
 for (const id of ["pPrice", "pCompareAt"]) {
   $(id).addEventListener("input", renderPriceHint);
 }
+$("pQuoteOnly").addEventListener("change", renderPriceHint);
 
 // ----------------------------------------------------------- product editor
 
@@ -893,6 +973,7 @@ function openEditor(product) {
   $("pSort").value = editing.sortOrder ?? 0;
   $("pPublished").checked = editing.published !== false;
   $("pInStock").checked = isInStock(editing);
+  $("pQuoteOnly").checked = isQuoteOnly(editing);
   $("pPhotos").value = "";
   $("pModel").value = "";
   $("editorError").textContent = "";
@@ -913,25 +994,31 @@ function renderThumbs() {
   const wrap = $("pThumbs");
   wrap.replaceChildren(
     ...staged.photoUrls.map((url, i) => {
+      const path = staged.photoPaths[i] || "";
       const cell = document.createElement("div");
       cell.className = "t";
-      const img = document.createElement("img");
-      img.src = url;
-      img.alt = "";
+      const el = mediaElement(url, {
+        path,
+        alt: "",
+        controls: false,
+      });
+      if (el.tagName === "VIDEO") el.classList.add("thumb-video");
       const del = document.createElement("button");
       del.type = "button";
       del.textContent = "×";
-      del.title = "Remove photo";
+      del.title = isVideoMedia(url, path) ? "Remove video" : "Remove photo";
       del.addEventListener("click", () => {
         staged.photoUrls.splice(i, 1);
-        const [path] = staged.photoPaths.splice(i, 1);
+        const [removed] = staged.photoPaths.splice(i, 1);
         // Queue rather than delete: the saved document still references this
         // file until the owner actually saves, and cancelling must leave the
         // live storefront untouched.
-        if (path) pendingDeletes.push(path);
+        if (removed) pendingDeletes.push(removed);
+        // May have removed the still we kept for standee generation.
+        firstPhotoBlob = null;
         renderThumbs();
       });
-      cell.append(img, del);
+      cell.append(el, del);
       return cell;
     })
   );
@@ -962,7 +1049,13 @@ function renderModelState() {
  */
 async function syncStandee() {
   const widthCm = Number($("pWidthCm").value);
-  const photo = staged.photoUrls[0];
+  // Standee needs a still image — a video as the first media item must not
+  // be fed into the GLB generator.
+  const cover = coverMedia({
+    photoUrls: staged.photoUrls,
+    photoPaths: staged.photoPaths,
+  });
+  const photo = cover && !cover.video ? cover.url : "";
 
   const wantsStandee = Boolean(photo) && widthCm > 0;
 
@@ -1021,12 +1114,35 @@ async function uploadPhotos(files) {
   $("editorError").textContent = "";
   try {
     for (const [i, file] of files.entries()) {
-      const { blob, mime, ext } = await downscaleImage(file);
+      const kind = mediaKindFromFile(file);
+      if (!kind) {
+        $("editorError").textContent =
+          `Skipped “${file.name}” — use a photo (JPEG/PNG/WebP) or video (MP4/WebM/MOV).`;
+        continue;
+      }
+
+      let blob;
+      let mime;
+      let ext;
+      if (kind === "video") {
+        if (file.size > MAX_VIDEO_BYTES) {
+          $("editorError").textContent =
+            `“${file.name}” is too large (max 50 MB for videos).`;
+          continue;
+        }
+        blob = file;
+        mime = videoContentType(file.name, file.type);
+        ext = videoExtension(file.name, mime);
+      } else {
+        ({ blob, mime, ext } = await downscaleImage(file));
+      }
+
       const path = `shops/${shopId}/products/${editing.id}/photos/${Date.now()}-${i}.${ext}`;
       const { url } = await uploadAsset(path, blob, mime, (pct) =>
         setBar("photoBar", Math.round(((i + pct / 100) / files.length) * 100))
       );
-      if (staged.photoUrls.length === 0) firstPhotoBlob = blob;
+      // Keep a still-image blob for AR standee generation (never a video).
+      if (kind === "image" && !firstPhotoBlob) firstPhotoBlob = blob;
       staged.photoUrls.push(url);
       staged.photoPaths.push(path);
       stagedUploads.push(path);
@@ -1114,6 +1230,7 @@ $("saveProduct").addEventListener("click", async () => {
       sortOrder: Number($("pSort").value) || 0,
       published: $("pPublished").checked,
       inStock: $("pInStock").checked,
+      quoteOnly: $("pQuoteOnly").checked,
       ...staged,
       ...(isNew ? { createdAt: new Date() } : {}),
     });
