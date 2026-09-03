@@ -40,6 +40,7 @@ slugs/{slug}                     → { shopId, claimedAt }        public read
 domains/{hostname}               → { shopId, claimedAt }        public read
 shops/{shopId}                   → name, tagline, currency,     public read
                                    whatsapp, accent, logoUrl,
+                                   instagram, tiktok, facebook,
                                    published, ownerUid,
                                    featuredProductId
 shops/{shopId}/products/{id}     → name, description, price,    public read

@@ -128,6 +128,7 @@
           <div>
             <label for="sWhatsapp">WhatsApp number</label>
             <input id="sWhatsapp" type="text" placeholder="923001234567" />
+            <div class="hint" id="whatsappHint"></div>
           </div>
           <div>
             <label for="sAccent">Brand colour</label>
@@ -139,6 +140,10 @@
           <div>
             <label for="sInstagram">Instagram</label>
             <input id="sInstagram" type="text" placeholder="@yourshop" autocomplete="off" />
+          </div>
+          <div>
+            <label for="sTiktok">TikTok</label>
+            <input id="sTiktok" type="text" placeholder="@yourshop" autocomplete="off" />
           </div>
           <div>
             <label for="sFacebook">Facebook</label>
@@ -161,6 +166,17 @@
           Wide banner behind your shop name. Landscape works best — it's cropped
           to a strip on phones.
         </div>
+        <label for="sCoverScrim">Cover photo style</label>
+        <select id="sCoverScrim">
+          <option value="">Dark or busy photo — shade it for readability</option>
+          <option value="soft">Bright photo — show more of the image</option>
+        </select>
+        <div class="hint">
+          Your shop name sits on top of the cover, so the photo is shaded to keep
+          it readable. Pick “Bright photo” for a light, airy cover — the shading
+          lifts and the name switches to dark text instead.
+        </div>
+
         <div id="coverPreviewWrap" hidden style="margin-top:10px">
           <img id="coverPreview" alt="Current cover photo"
                style="width:100%;max-height:130px;object-fit:cover;border-radius:10px;border:1px solid var(--rule)" />

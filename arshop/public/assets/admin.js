@@ -580,20 +580,58 @@ function fillSettings(s) {
   $("sCurrency").value = s.currency || "";
   $("sWhatsapp").value = s.whatsapp || "";
   $("sInstagram").value = s.instagram || "";
+  $("sTiktok").value = s.tiktok || "";
   $("sFacebook").value = s.facebook || "";
   $("sEmail").value = s.email || "";
   $("sAccent").value = s.accent || "#5b5bd6";
   $("sPublished").checked = s.published !== false;
+  renderWhatsappHint();
   // Cleared first so renderFeaturedOptions takes the stored id rather than
   // preserving whatever was selected before this fill.
   $("sFeatured").value = "";
   renderFeaturedOptions();
+  $("sCoverScrim").value = s.coverScrim === "soft" ? "soft" : "";
   $("coverPreviewWrap").hidden = !s.coverUrl;
   if (s.coverUrl) $("coverPreview").src = s.coverUrl;
   $("sDomain").value = s.customDomain || "";
   $("domainSteps").hidden = !s.customDomain;
   $("domFallback").textContent = `${location.host}/s/${s.slug}`;
 }
+
+/**
+ * Warn about a WhatsApp number wa.me cannot dial.
+ *
+ * wa.me needs the full international number with no leading zero, but the
+ * natural way to write a Pakistani mobile is 0333 4896777 — and typing it that
+ * way produces wa.me/03334896777, which fails for every customer with no error
+ * anywhere the owner would see it. The shop looks fine and simply never
+ * receives an order. Say so at the point of entry instead.
+ */
+function renderWhatsappHint() {
+  const digits = $("sWhatsapp").value.replace(/\D/g, "");
+  const hint = $("whatsappHint");
+  hint.classList.remove("warn");
+
+  if (!digits) {
+    hint.textContent = "Full international number, no + and no leading 0.";
+    return;
+  }
+  if (digits.startsWith("0")) {
+    hint.textContent =
+      `Starting with 0 won't work — drop it and add your country code ` +
+      `(Pakistan: 92${digits.slice(1)}).`;
+    hint.classList.add("warn");
+    return;
+  }
+  if (digits.length < 10) {
+    hint.textContent = "That looks too short for an international number.";
+    hint.classList.add("warn");
+    return;
+  }
+  hint.textContent = `Customers will message https://wa.me/${digits}`;
+}
+
+$("sWhatsapp").addEventListener("input", renderWhatsappHint);
 
 // Repaint the dashboard as the colour is dragged, so the owner sees what their
 // storefront will look like before committing — the picker swatch alone doesn't
@@ -615,10 +653,12 @@ $("saveSettings").addEventListener("click", async () => {
       // Stored bare — the storefront builds the full URL, so an owner can type
       // "@therangoco", "therangoco" or a full profile link and all three work.
       instagram: $("sInstagram").value.trim().replace(/^@/, ""),
+      tiktok: $("sTiktok").value.trim().replace(/^@/, ""),
       facebook: $("sFacebook").value.trim(),
       email: $("sEmail").value.trim(),
       accent: $("sAccent").value,
       published: $("sPublished").checked,
+      coverScrim: $("sCoverScrim").value,
       // Just an id on the shop doc — the storefront looks it up in the product
       // list it already has, so changing the weekly feature is one write.
       featuredProductId: $("sFeatured").value,

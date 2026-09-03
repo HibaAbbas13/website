@@ -662,6 +662,16 @@ function buildSocialLinks(s) {
     );
   }
 
+  // Stored bare like Instagram, so an owner can paste a handle, a bare name or
+  // the full share link (which carries ?_r=&_t= tracking params) and all three
+  // resolve. Dots are legal in TikTok usernames, so they survive encoding.
+  const tt = String(s.tiktok || "").trim().replace(/^@/, "");
+  if (tt) {
+    links.push(
+      socialLink("TikTok", safeUrl(tt) || `https://www.tiktok.com/@${encodeURIComponent(tt)}`)
+    );
+  }
+
   const fb = String(s.facebook || "").trim();
   if (fb) {
     // Owners type a page *name* ("Rango Bhai") as often as a username.
@@ -867,6 +877,11 @@ function applyShopChrome(s) {
   // `cover-mode` on <body> lets the top bar float over the image; the CSS
   // needs to know from an ancestor of the bar, not from the hero.
   document.body.classList.toggle("cover-mode", Boolean(s.coverUrl));
+  // A bright, airy cover needs the opposite treatment to a dark one: the scrims
+  // that keep a white shop name legible on a dark photo turn a light photo into
+  // milk. Which way round is the owner's call — nothing here can read the image
+  // (Storage serves it without CORS headers, so a canvas sample would taint).
+  document.body.classList.toggle("cover-soft", s.coverScrim === "soft");
   if (s.coverUrl) $("coverImg").src = s.coverUrl;
 
   const number = String(s.whatsapp || "").replace(/\D/g, "");
